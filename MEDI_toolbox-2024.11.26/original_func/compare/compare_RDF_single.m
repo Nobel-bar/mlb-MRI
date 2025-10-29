@@ -18,15 +18,18 @@ close all;
 
 
 %% --- 1. データ読み込み ---
-% QSM_processing.m で保存された RDF.mat ファイルを読み込みます。
+% パス設定
+image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
+image_file_1 = '1_data';
+image_file_2 = '2_original_data';
+image_file_3 = '3_output_data'; 
+image_file_4 = '4_rolate_output_data'; 
+image_file_5 = '5_fitting_output_data'; 
 
+image_file_0 = image_file_00; % slab用
 
-% --- 1. 初期設定 ---
-% --- 1. 初期設定 ---
-image_file_1 = 'F:/hamaguchi/copy/20241205_RawData_H/Volunteer_Rotate_H/2DGE_0deg_H/total_slice';
-image_file_2 = 'output_data';
-
-save_path = fullfile(image_file_1, image_file_2);
+save_path = fullfile(image_file_0, image_file_2);
 
 load(fullfile(save_path, 'phase.mat'));
 load(fullfile(save_path, 'PDF.mat'));

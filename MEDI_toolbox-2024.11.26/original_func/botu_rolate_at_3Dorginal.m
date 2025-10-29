@@ -20,10 +20,14 @@ close all;
 fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
+% パス設定
+image_file_0 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_1 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
+
+image_file_1 = image_file_0; % slab用
 
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_1, image_file_2);
@@ -74,8 +78,8 @@ hybrid_slice = 12;
 
 %% --- 2. RAWデータの読み込み ---
 fprintf('2. RAWデータを読み込んでいます...\n');
-filename_input_Re = fullfile(load_base_path, [input_Re_name, '.raw']);
-filename_input_Im = fullfile(load_base_path, [input_Im_name, '.raw']);
+filename_input_Re = fullfile(load_base_path, [input_Re_name]);
+filename_input_Im = fullfile(load_base_path, [input_Im_name]);
 
 % 実数部
 fileID_Re = fopen(filename_input_Re, 'r');
@@ -194,7 +198,7 @@ clear final_img_shifted final_img_shifted_org;
 %% --- 7. スライスごとの表示と保存 ---
 fprintf('7. スライスごとの表示と保存を開始します...\n');
 
-for slice_idx = 7:Slice - 7
+for slice_idx = 12:12
     
     fprintf('  --- スライス %d / %d を処理中 ---\n', slice_idx, Slice);
 

@@ -1,3 +1,6 @@
+clear variables;
+close all;
+
 % マスクの結果を，元画像と一覧で比較するためのプログラム．2D
 % QSM_processingを使用した結果に適用．
 

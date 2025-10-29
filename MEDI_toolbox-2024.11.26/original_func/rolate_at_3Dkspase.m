@@ -17,18 +17,18 @@ clear variables;
 close all;
 
 %% --- 1. 初期設定 ---
-fprintf('1. パラメータを設定しています...\n');
+image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 
-% パス設定
-image_file_1 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
+image_file_0 = image_file_00; % slab用
 
 % 読み込みパスと保存パスを定義
-load_base_path = fullfile(image_file_1, image_file_2);
-load_mask_path = fullfile(image_file_1, image_file_3);
-save_path = fullfile(image_file_1, image_file_4);
+load_base_path = fullfile(image_file_0, image_file_2);
+load_mask_path = fullfile(image_file_0, image_file_3);
+save_path = fullfile(image_file_0, image_file_4);
 
 if ~exist(save_path, 'dir')
     mkdir(save_path);
@@ -101,7 +101,7 @@ clear original_img_Re original_img_Im data_vector_re data_vector_im;
 % [修正] fftn (3D FFT) を使用します
 fprintf('3. 3D k空間への変換 (fftn) とP0補正を行っています...\n');
 k_space_orig = fftshift(fftn(orig_img_3d));
-clear orig_img_3d; % メモリ節約
+% clear orig_img_3d; % メモリ節約
 
 [max_val, max_idx] = max(abs(k_space_orig(:)));
 p0_factor = k_space_orig(max_idx) / max_val;
@@ -198,7 +198,7 @@ clear artifact_img_ext original_img_ext; % メモリ節約
 %% --- 7. スライスごとの表示と保存 ---
 fprintf('7. スライスごとの表示と保存を開始します...\n');
 
-for slice_idx = 7:Slice - 7
+for slice_idx = 12:12
     
     fprintf('  --- スライス %d / %d を処理中 ---\n', slice_idx, Slice);
 
