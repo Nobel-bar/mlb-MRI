@@ -56,10 +56,6 @@ x_center = floor(orig_matrix_x / 2) + 1;
 x_start_cut = x_center - floor(cutted_matrix_x / 2);
 x_end_cut = x_start_cut+cutted_matrix_x - 1;
 
-y_center = floor(magnification / 2) + 1;
-y_start_cut = y_center - floor(cutted_matrix_y / 2);
-y_end_cut = y_start_cut+cutted_matrix_y - 1;
-
 y_center_org = floor(orig_matrix_y / 2) + 1;
 y_start_org_cut = y_center_org - floor(cutted_matrix_y / 2);
 y_end_org_cut = y_start_org_cut+cutted_matrix_y - 1;

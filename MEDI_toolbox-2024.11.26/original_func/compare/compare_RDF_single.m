@@ -29,7 +29,7 @@ image_file_5 = '5_fitting_output_data';
 
 image_file_0 = image_file_00; % slab用
 
-save_path = fullfile(image_file_0, image_file_2);
+save_path = fullfile(image_file_0, image_file_3);
 
 load(fullfile(save_path, 'phase.mat'));
 load(fullfile(save_path, 'PDF.mat'));
@@ -152,7 +152,8 @@ colorbar;
 ax3.Position = [0.05, 0.05, 0.43, 0.85];
 ax4.Position = [0.52, 0.05, 0.43, 0.85];
 
-fprintf('表示が完了しました。\n');ax4.Position = [left_margin_2, bottom_margin, plot_width, plot_height];
+fprintf('表示が完了しました。\n');
+% ax4.Position = [left_margin_2, bottom_margin, plot_width, plot_height];
 
 %{
 

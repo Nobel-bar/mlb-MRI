@@ -111,7 +111,6 @@ num_echos = length(params.TE);
 echo_idx = 1; % 最初のエコーのみ使用
 
 fprintf('データの読み込み完了。%d スライス、%d エコーのデータを処理します。\n', num_slices, num_echos);
-
 %% --- 3. スライスごとのループ処理 ---
 fprintf('3. スライスごとのシミュレーションループを開始します (全 %d スライス)...\n', num_slices);
 
@@ -130,6 +129,7 @@ for slice_idx = 7:num_slices-7
     % フーリエ変換の回転定理に基づき、k空間を直接回転させます。
     % 補間によるアーティファクトを防ぐため、画像空間と同様にゼロパディングを行います。
     
+
     padded_size = 3 * IdealSize;
     % 複素数のゼロ行列（k空間）を作成
     padded_k_space = complex(zeros(padded_size, padded_size));

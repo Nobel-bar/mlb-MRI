@@ -44,12 +44,17 @@ end
 matrix_size = [512, 512];
 
 % フィッティング多項式の最大次数
-fit_degree = 5;
+fit_degree = 2;
  
 %% --- 2. データの読み込み ---
 fprintf('2. アンラップデータを読み込んでいます...\n');
-% (修正) phase.matから読み込まれる変数を 'data' 構造体に格納
-data = load(fullfile(load_base_path, 'phase.mat'));
+try
+    data = load(fullfile(load_base_path, 'phase.mat'));
+catch ME
+    fprintf('phase.mat の読み込みに失敗しました。\n');
+    fprintf('パスを確認してください: %s\n', fullfile(load_base_path, 'phase.mat'));
+    rethrow(ME);
+end
 
 % (修正) iFreq変数が存在するか確認
 if ~isfield(data, 'iFreq')
@@ -60,7 +65,13 @@ iFreq = data.iFreq;
 clear data; % メモリ節約
 
 % マスクの読み込み
-load(fullfile(load_mask_path, 'Mask.mat')); % 'Mask' という変数名で読み込まれると仮定
+try
+    load(fullfile(load_mask_path, 'Mask.mat')); % 'Mask' という変数名で読み込まれると仮定
+catch ME
+    fprintf('Mask.mat の読み込みに失敗しました。\n');
+    fprintf('パスを確認してください: %s\n', fullfile(load_mask_path, 'Mask.mat'));
+    rethrow(ME);
+end
 Mask = logical(Mask);
 fprintf('データの読み込みが完了しました。\n');
 
@@ -92,7 +103,7 @@ center_slice_idx = floor(Slice / 2) + 1;
 
 fprintf('全 %d スライスのフィッティング処理を開始します...\n', Slice);
 % (修正) params.iFreq を iFreq のサイズ (img_size) に変更
-fitting = complex(zeros([matrix_size_x, matrix_size_y, Slice],'double'));
+fitting = zeros([matrix_size_x, matrix_size_y, Slice],'double');
 for slice_idx = 1:Slice
     
     fprintf('  --- スライス %d / %d を処理中 ---\n', slice_idx, Slice);
@@ -157,20 +168,21 @@ for slice_idx = 1:Slice
         drawnow;
     end
     fitting(:,:,slice_idx) = fitting_surface;
-    % (修正) ファイル名にスライス番号を含めて保存
-    % filename_base = sprintf('fitting_surface_slice%03d.raw', slice_idx);
-    % save_raw_data(fullfile(save_path, filename_base), fitting_surface);
-    
-    % (オプション) 位相補正後の画像も保存する場合
-    % corrected_phase = current_slice_phase - fitting_surface;
-    % corrected_img = abs(current_slice_complex) .* exp(1i * corrected_phase);
-    % save_raw_data(fullfile(save_path, sprintf('corrected_img_slice%03d_Re.raw', slice_idx)), real(corrected_img));
-    % save_raw_data(fullfile(save_path, sprintf('corrected_img_slice%03d_Im.raw', slice_idx)), imag(corrected_img));
 
 end % --- スライスループの終了 ---
 
-save(fullfile(save_path, 'fitting.mat'), 'fitting');
+% ★★★ 変更点: ファイル名に [fit_degree]x[fit_degree]_ を追加 ★★★
+filename_fitting = sprintf('%dx%d_fitting.mat', fit_degree, fit_degree);
+save_full_path = fullfile(save_path, filename_fitting);
 
+try
+    save(save_full_path, 'fitting', '-v7.3'); % -v7.3 は大容量データに対応
+    fprintf('...全 %d スライスのフィッティングが完了しました。\n', Slice);
+    fprintf('結果は %s に保存されました。\n', save_full_path);
+catch ME_save
+    fprintf('最終 .mat ファイルの保存に失敗しました: %s\n', save_full_path);
+    fprintf('エラー: %s\n', ME_save.message);
+end
 
 fprintf('...全 %d スライスのフィッティングが完了しました。\n', Slice);
 fprintf('結果は %s に保存されました。\n', save_path);

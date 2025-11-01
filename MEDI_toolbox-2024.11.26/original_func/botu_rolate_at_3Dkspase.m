@@ -2,14 +2,6 @@
 % [V5] RAWデータ (Real_0ch...) を読み込み、
 % 3D k空間 (fftn) に対して 3D回転 (imrotate3) を行いシミュレートする
 %
-% 修正点:
-% 1. [最重要] 3D FFT (fftn) を使用し、3D k空間データを生成します。
-% 2. Image Processing Toolbox の 'imrotate3' を使用し、3D k空間全体を
-%    Z軸周りに回転させます。
-% 3. 3D k空間のままハイブリッド化を行います。
-% 4. ギブスリンギングを抑えるため、k空間にHamming窓を適用します。
-% 5. 3D k空間全体を 'ifftn' で画像空間に再構成します。
-% 6. 最後にスライスごとのループで表示・保存します。
 %==================================================================================================
 
 fprintf('スクリプトを開始します (V5: 3D-FFT/3D-Rotateアーキテクチャ + Toolbox使用)\n');
@@ -68,7 +60,8 @@ y_start_ext = y_center_ext - floor(cutted_matrix_y / 2); % 416
 y_end_ext = y_start_ext + cutted_matrix_y - 1; % 767
 
 % k空間のハイブリッド化を行う「絶対インデックス」
-hybrid_row_indices = 112:(112 + 112 - 1); % 112行目から112行分
+hybrid_row_indices = x_start_ext+112:(x_start_ext + 112 + 112 - 1); % 112行目から112行分
+
 
 
 %% --- 2. RAWデータの読み込み ---

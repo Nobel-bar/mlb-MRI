@@ -1,7 +1,7 @@
 %================================================================================================
 % QSM解析実行スクリプト (Read_Raw_Data.m 使用例)
+%　ホモジニアスフィッティングに適用させる
 %================================================================================================
-clear all;
 clear variables;
 
 %% --- 1. 撮像パラメータを手動で設定 ---
@@ -22,13 +22,13 @@ image_file_5 = '5_fitting_output_data';
 image_file_0 = image_file_00; % slab用
 
 % 読み込みパスと保存パスを定義
-load_base_path = fullfile(image_file_0, image_file_1);
+load_base_path = fullfile(image_file_0, image_file_5);
+save_path = fullfile(image_file_0, image_file_5);
 
-save_path = fullfile(image_file_0, image_file_3);
 
-if ~exist(save_path, 'dir')
-    mkdir(save_path);
-    fprintf('保存フォルダを作成しました: %s\n', save_path);
+if ~exist(load_base_path, 'dir')
+    mkdir(load_base_path);
+    fprintf('保存フォルダを作成しました: %s\n', load_base_path);
 end
 
 % params構造体の初期化
@@ -51,8 +51,8 @@ params.B0_dir = [0, 0, 1];
 
 %% --- 2. rawファイルのパスを指定 ---
 % ご自身のファイルが保存されている実際のパスに書き換えてください。
-mag_filepath =fullfile(load_base_path, '1st_2DGE_0deg_mag.raw');
-phase_filepath =fullfile(load_base_path, '1st_2DGE_0deg_phase.raw');
+mag_filepath =fullfile(load_base_path, 'fitting_mag.raw');
+phase_filepath =fullfile(load_base_path, 'fitting_phase.raw');
 
 %% --- 3. 新しい関数でデータを読み込む ---
 % Read_Raw_Data関数からすべての出力変数を受け取ります。
@@ -72,7 +72,8 @@ fprintf('データの読み込みが完了しました。磁化率マップの�
 % 振幅画像から脳領域を抽出するマスクを作成します。
 % FSLのBETツール（要インストール）を使用するのが一般的です。
 iMag = sqrt(sum(abs(iField).^2, 4)); % 全エコーの振幅を合成
-Mask = BET(iMag, matrix_size, voxel_size); 
+%Mask = BET(iMag, matrix_size, voxel_size); 
+Mask = ones(512,512,23,1);
 
 % save(fullfile(save_path, 'Mask.mat'), 'Mask', 'iMag');
 
@@ -102,43 +103,5 @@ else
 end
 
 
-% save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
+save(fullfile(save_path, 'phase_fitting.mat'), 'iFreq', 'iFreq_raw');
 
-%% 4. 背景磁場除去
-% 脳組織外に由来する背景磁場を除去し、局所磁場マップ(RDF)を生成します。
-% ここではPDF (Projection onto Dipole Fields) を使用する例を示します。
-RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
-
- 
-% save(fullfile(save_path, 'PDF.mat'), 'RDF');
-
-%% 5. QSM再構成 (MEDI_L1)
-% これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
-% 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
-% MEDI+0（CSFを基準とする手法）を使用する例です。
-
-% CSFマスクの生成（R2*マップを利用）
-R2s = arlo(TE, abs(iField));
-Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
-
-% save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-
-path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
-save(fullfile(path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-
-% MEDI_L1関数を呼び出し
-QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
-
-fprintf('スクリプトのこの部分までの処理が完了しました。\n');
-
-% save(fullfile(save_path, 'QSM.mat'), 'QSM');
-% export QSM variable as dicom files in the 'QSM' directory
-Write_DICOM(QSM, files, 'QSM')
-
-% Initialization for Source Separation
-[chi_p_init,chi_n_init,R2p,alpha,beta] = MEDI_L1ss_init(Mask,CF,R2s,QSM,delta_TE);
-save RDFss.mat iFreq RDF N_std iMag Mask matrix_size voxel_size delta_TE CF B0_dir alpha beta R2p Mask_CSF chi_p_init chi_n_init
-
-% Source Separation        
-X = MEDI_L1ss('lambda',1000, 'smv',5, 'filename', 'RDFss.mat','lambda_CSF',10);
-save SourceSep.mat X

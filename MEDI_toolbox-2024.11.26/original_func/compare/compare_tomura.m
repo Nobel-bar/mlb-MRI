@@ -46,8 +46,14 @@ fprintf('読み込んでいます...');
 
 fprintf('データの読み込みが完了しました。\n');
 
-homo_RDF = iFreq - fitting;
 
+matrix_size = [512, 512];
+filename_input_maskimg = "F:\tomura\20241119_kashiwa\20241205_RawData\20241205_RawData\Volunteer_Rotate\2DGE_0deg\fitting-5_x5_y5_masked_nomag_com_one_257-384-13_P0_Re_12_by_mask_12.raw";
+fileID_input_img = fopen(filename_input_maskimg, 'r');
+tomura_fitting = fread(fileID_input_img, matrix_size, 'double');
+fclose(fileID_input_img);
+
+homo_RDF = tomura_fitting;
 
 %% 2. マスクの適用
 if ~exist('Mask', 'var')
@@ -175,3 +181,29 @@ ylabel('Y Index');
 zlabel('Local Field (a.u.)');
 title('homo (homo_RDF)');
 colorbar;
+
+
+%{
+
+% --- 1. 初期設定 ---
+image_file_1 = 'Volunteer_Rotate_H';
+image_file_2 = '2DGE_0deg_H/total_slice';
+
+save_path = fullfile('.', image_file_1, image_file_2);
+save_raw_data(fullfile(save_path, 'phase_before.raw'), img_slice_raw);
+save_raw_data(fullfile(save_path, 'phase_after.raw'), img_slice_unwrapped);
+
+
+% -------------------------------------------------------------------
+% スクリプトの最後にローカル関数を定義します
+% -------------------------------------------------------------------
+function save_raw_data(filepath, data)
+    fid = fopen(filepath, 'w');
+    if fid == -1
+        error('ファイルが開けませんでした: %s', filepath);
+    end
+    fwrite(fid, data, 'double');
+    fclose(fid);
+end
+%}
+
