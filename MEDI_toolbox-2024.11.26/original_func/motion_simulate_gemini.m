@@ -18,16 +18,20 @@ close all;
 fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
-image_file_1 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_2 = '1_data';
+image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
+image_file_1 = '1_data';
+image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
+image_file_0 = image_file_00; % slab用
+
 % 読み込みパスと保存パスを定義
-load_base_path = fullfile(image_file_1, image_file_2);
-load_mask_path = fullfile(image_file_1, image_file_3);
-save_path = fullfile(image_file_1, image_file_4);
+load_base_path = fullfile(image_file_0, image_file_1);
+load_mask_path = fullfile(image_file_0, image_file_3);
+save_path = fullfile(image_file_0, image_file_4);
 
 % 保存先フォルダが存在しない場合は作成する
 if ~exist(save_path, 'dir')
@@ -96,13 +100,13 @@ matrix_y = params.matrix_size(2);
 num_slices = params.matrix_size(3);
 echo_idx = 1; % 最初のエコーのみ使用
 
-fprintf('データの読み込み完了。%d スライス、%d エコーのデータを処理します。\n', num_slices, num_echos);
+fprintf('データの読み込み完了。%d スライス、%d エコーのデータを処理します。\n', num_slices);
 original_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * iPhase_4D(:,:,:, echo_idx));
 
 % Highpass_img = original_img ./ fitting;  % fittingを正規化したうえで
 Highpass_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (RDF));
-Back_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (iFreq - RDF));
-
+% Back_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (iFreq - RDF));
+Back_img =  exp(1i * (iFreq - RDF)); % ./abs(exp(1i * (iFreq - RDF))); % 正規化した
 
 %% --- 3. 実空間データの拡張 (ゼロパディング) ---
 fprintf('3. 実空間データのY方向を拡張 (ゼロパディング) しています...\n');
@@ -122,10 +126,9 @@ y_end_final = y_start_final + matrix_y - 1;
 
 % [★修正: user_21 コメント反映] ゼロ行列の中央にデータを代入
 extend_org(:,y_start_final:y_end_final, :) = original_img;
-extend_high(:,y_start_final:y_end_final, :) = Highpass_img; % 'extend_high' 自身でなく Highpass_img を代入
-extend_back(:,y_start_final:y_end_final, :) = Back_img; % 'extend_back' 自身でなく Back_img を代入
+extend_high(:,y_start_final:y_end_final, :) = Highpass_img; 
+extend_back(:,y_start_final:y_end_final, :) = Back_img; 
 
-% (この時点で large_... の作成は不要。extend_... を直接回転させる)
 fprintf('   3D実空間の準備が完了しました。\n');
 
 %% --- 4. 3D 実空間の回転（モーションのシミュレート） ---
@@ -151,38 +154,23 @@ fprintf('    虚数部 (Highpass) を回転中...\n');
 rotated_high_Im = imrotate3(large_high_Im, theta, rotation_axis, 'linear', 'crop');
 extend_high_rotated = complex(rotated_high_Re, rotated_high_Im);
 clear large_high_Re large_high_Im rotated_high_Re rotated_high_Im;
-
-% --- 4.3. Back_img (extend_back) の回転 ---
-large_back_Re = real(extend_back);
-large_back_Im = imag(extend_back);
-fprintf('    実数部 (Background) を回転中...\n');
-rotated_back_Re = imrotate3(large_back_Re, theta, rotation_axis, 'linear', 'crop');
-fprintf('    虚数部 (Background) を回転中...\n');
-rotated_back_Im = imrotate3(large_back_Im, theta, rotation_axis, 'linear', 'crop');
-extend_back_rotated = complex(rotated_back_Re, rotated_back_Im);
-clear large_back_Re large_back_Im rotated_back_Re rotated_back_Im;
-fprintf('   3D 実空間の回転が完了しました。\n'); 
+% 
+% % --- 4.3. Back_img (extend_back) の回転 ---
+% large_back_Re = real(extend_back);
+% large_back_Im = imag(extend_back);
+% fprintf('    実数部 (Background) を回転中...\n');
+% rotated_back_Re = imrotate3(large_back_Re, theta, rotation_axis, 'linear', 'crop');
+% fprintf('    虚数部 (Background) を回転中...\n');
+% rotated_back_Im = imrotate3(large_back_Im, theta, rotation_axis, 'linear', 'crop');
+% extend_back_rotated = complex(rotated_back_Re, rotated_back_Im);
+% clear large_back_Re large_back_Im rotated_back_Re rotated_back_Im;
+% fprintf('   3D 実空間の回転が完了しました。\n'); 
 
 % --- 4.4. 回転後実空間データの合成 ---
-% [★修正: user_21 コメント反映]
-% (回転したHighpass) と (回転したBackground) を合成
-% (注: user_19 のロジックでは (回転Highpass) * (回転しないBackground) だったが、
-%  ここでは両方回転させたものを使用する)
-% space_rotated = extend_high_rotated .* extend_back_rotated;
-%
-% [★修正: user_19/21 の意図を再解釈]
-% user_19/21 の `space_rotated = extend_high_rotated .* exp(1i * (iFreq - RDF));`
-% は「回転後Highpass」 * 「回転前Background(実空間)」を意図していた
-% ただし iFreq - RDF は (512x512x23) で、extend_high_rotated は (512x788x23)
-% サイズが合わないため、Background も拡張・回転させたもの (extend_back_rotated) を使うのが妥当
-space_rotated = extend_high_rotated .* extend_back_rotated;
+% 「回転後Highpass」 * 「回転前Background(実空間)」を意図していた
+% ただし extend_back，extend_high_rotated は (512x788x23)
+space_rotated = extend_high_rotated .* extend_back;
 
-% [★修正: user_21 コメント反映]
-% `space_rotated` から `(params.matrix_size(1), magnification, (params.matrix_size(3)))`
-% のサイズで切り出したい -> `space_rotated` は既にそのサイズです。
-% `space_rotated_base` という名前でコピーを作成します。
-space_rotated_base = space_rotated;
-clear space_rotated;
 
 %% --- 5. 3D k空間データのハイブリッド化 ---
 fprintf('5. 3D k空間のハイブリッド化を実行中...\n');
@@ -191,12 +179,13 @@ fprintf('5. 3D k空間のハイブリッド化を実行中...\n');
 fprintf('    回転前のk空間 (hybrid_space) を作成中 (fftn)...\n');
 hybrid_space = fftshift(fftn(extend_org)); % 回転前 (512 x 788 x 23)
 
+direct_hybrid_space = fftshift(fftn(extend_org_rotated)); % 回転前 (512 x 788 x 23)
+
 % [★修正: `space_rotated_base` (回転後実空間) をk空間へ]
 fprintf('    回転後のk空間 (k_space_rolate) を作成中 (fftn)...\n');
-k_space_rolate = fftshift(fftn(space_rotated_base)); % 回転後 (512 x 788 x 23)
+k_space_rolate = fftshift(fftn(space_rotated)); % 回転後 (512 x 788 x 23)
 
-% --- k空間ROIの絶対インデックスを計算 ---
-% [★修正: `orig_matrix_x` -> `matrix_x`]
+direct_k_space_rolate = fftshift(fftn(space_rotated)); % 回転後 (512 x 788 x 23)
 x_center = floor(matrix_x / 2) + 1; % 257
 x_start_cut = x_center - floor(cutted_matrix_x / 2); % 257 - 112 = 145
 x_end_cut = x_start_cut + cutted_matrix_x - 1; % 145 + 224 - 1 = 368
@@ -206,13 +195,16 @@ y_center_org = floor(magnification / 2) + 1; % 788 -> 395
 y_start_org_cut = y_center_org - floor(cutted_matrix_y / 2); % 395 - 176 = 219
 y_end_org_cut = y_start_org_cut + cutted_matrix_y - 1; % 219 + 352 - 1 = 570
 
+
 % ハイブリッド化を行う行の絶対インデックス
 % (145 + 112 - 1) = 256 から 112 行分
 hybrid_row_indices = (x_start_cut + pix_start_row - 1) : (x_start_cut + pix_start_row + width - 2); 
+
  
 fprintf('    k空間データをハイブリッド化 (置換) しています...\n');
 % 指定された行 (256:367) を、回転後のk空間データで上書き
 hybrid_space(hybrid_row_indices, :, :) = k_space_rolate(hybrid_row_indices, :, :);
+direct_hybrid_space(hybrid_row_indices, :, :) = direct_k_space_rolate(hybrid_row_indices, :, :);
 
 clear k_space_rolate; % メモリ節約
 
@@ -221,24 +213,34 @@ fprintf('    k空間のROIを切り出しています...\n');
 % 最終k空間 (512 x 788 x 23) をゼロで初期化
 final_k_space = complex(zeros(matrix_x, magnification, num_slices));
 
+direct_final_k_space = complex(zeros(matrix_x, magnification, num_slices));
+
+
 % [★修正: `y_start_cut` -> `y_start_org_cut`]
 % `hybrid_space` から k空間ROI (224 x 352) を切り出し、
-% `final_k_space` の同じ位置に配置
+% `final_k_space` の同じ位置に配置　実際に読み取っている範囲
+% --- k空間ROIの絶対インデックスを計算 ---
+% [★修正: `orig_matrix_x` -> `matrix_x`]
+
+
 final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
     hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
+direct_final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
+    direct_hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
  
 clear hybrid_space;
 
 %% --- 6. アーティファクト画像の再構成 ---
 fprintf('6. アーティファクト画像を再構成中 (ifftn)...\n');
 artifact_img_ext = ifftn(ifftshift(final_k_space));
-
+direct_artifact_img_ext = ifftn(ifftshift(direct_final_k_space));
 clear final_k_space; 
 
 % 拡張したY次元 (788) を元のY次元 (512) に戻す (中央を切り出す)
 artifact_img = artifact_img_ext(:, y_start_final:y_end_final, :);
+direct_artifact_img = direct_artifact_img_ext(:, y_start_final:y_end_final, :);
 
-clear artifact_img_ext; 
+clear artifact_img_ext direct_artifact_img_ext; 
 
 
 %% --- 7. スライスごとの表示と保存 ---
@@ -253,6 +255,8 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     % [★修正: `Mag_4D` -> `iMag_4D`]
     original_img_slice = iMag_4D(:,:,slice_idx, echo_idx); % 強度画像を表示
     artifact_img_slice = artifact_img(:,:,slice_idx);
+    direct_artifact_img_slice = direct_artifact_img(:,:,slice_idx);
+    
 
     % (マスク適用は省略)
 
@@ -260,15 +264,19 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     figure('Name', sprintf('Slice %d Comparison', slice_idx), 'WindowState', 'maximized');
      
     % 1行2列のグリッドの1番目（左側）
-    subplot(1, 2, 1);
+    subplot(1, 3, 1);
     imshow(original_img_slice, []);
     title(sprintf('Original (Slice %d)', slice_idx));
      
-    % 1行2列のグリッドの2番目（右側）
-    subplot(1, 2, 2);
+    % 1行2列のグリッドの2番目（中央）
+    subplot(1, 3, 2);
     imshow(abs(artifact_img_slice), []);
     title(sprintf('Artifact (Slice %d)', slice_idx));
-
+    
+    % 1行2列のグリッドの3番目（右側）
+    subplot(1, 3, 3);
+    imshow(abs(direct_artifact_img_slice), []);
+    title(sprintf('Direct　Artifact (Slice %d)', slice_idx));
     % Figureを強制的に今すぐ描画する
     drawnow;
      
@@ -304,4 +312,3 @@ function save_raw_data(filepath, data)
     fclose(fid);
 end
 
-fprintf('...全 %d スライスのシミュレーションが完了しました。\n', num_slices);
