@@ -21,13 +21,14 @@ fprintf('1. パラメータを設定し、データを読み込んでいます..
 % パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
+image_file_000 = "C:\Users\hamaguchi\Downloads\matlab";
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00; % slab用
+image_file_0 = image_file_000; % local用
 
 load_path = fullfile(image_file_0, image_file_3);
 load_fitting_path = fullfile(image_file_0, image_file_5);
@@ -123,7 +124,7 @@ for slice_idx = 7:total_slices-7
     axis tight;
     daspect([1,1,1/50]);
     axis on;
-    colormap(ax5, 'default');
+    colormap(ax5, 'turbo');
     xlabel('X Index');
     ylabel('Y Index');
     zlabel('Local Field (a.u.)');
@@ -140,7 +141,7 @@ for slice_idx = 7:total_slices-7
     axis tight;
     daspect([1,1,1/50]);
     axis on;
-    colormap(ax6, 'default');
+    colormap(ax6, 'turbo');
     xlabel('X Index');
     ylabel('Y Index');
     zlabel('Local Field (a.u.)');
