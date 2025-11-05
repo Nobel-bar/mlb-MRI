@@ -2,6 +2,7 @@ clear variables;
 close all;
 
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_00_3d = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\3DGEIR_0deg_H'; % !! 要変更 !!% 3D 
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_000 = "C:\Users\hamaguchi\Downloads\matlab";
 image_file_1 = '1_data';
@@ -10,29 +11,61 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_000; % local用
+image_file_0 = image_file_00; % slab用 2D
 
-
-% 読み込みパスを定義
-load_base_path = fullfile(image_file_0, image_file_2);
-
-% 入力ファイル名 (拡張子なし)
+% 入力ファイル名 (拡張子なし) % --- サイズに関するパラメータ ---2D用
 input_Re_name = 'Real_0ch__1_1_1_1_1_0_0_1_23_1_1_1';
 input_Im_name = 'Imgn_0ch__1_1_1_1_1_0_0_1_23_1_1_1';
-
-% サイズに関するパラメータ
+filename_base = sprintf('1st_2DGE_0deg_15');  % 保存するファイル名
 orig_matrix_x = 512; % 元データのマトリクスサイズ
 orig_matrix_y = 768;
 cutted_matrix_x = 224; % 実際に収集されたk空間の有効データサイズ
 cutted_matrix_y = 352;
-final_matrix_x = 512; % 最終的に出力する画像のサイズ
-final_matrix_y = 512; 
 extention = 2.0/1.3;
-magnification = round(orig_matrix_y * extention);
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % -入力ファイル名-- サイズに関するパラメータ 3D ---
+% image_file_0 = image_file_00_3d; % slab用 3D
+% filename_base = sprintf('1st_3DGE_0deg');  % 保存するファイル名
+% input_Re_name = 'Real_0ch__1_1_1_1_1_0_0_1_1_50_1_1'; % 3D 
+% input_Im_name = 'Imgn_0ch__1_1_1_1_1_0_0_1_1_50_1_1'; % 3D 
+% orig_matrix_y = 512; %3D
+% cutted_matrix_x = 288;
+% cutted_matrix_y = 288;
+% 
+% extention = 1;
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+magnification = round(orig_matrix_y * extention); % Y方向の拡大後サイズ (約1182)
+
+% --- params構造体: QSMデータの撮像パラメータ ---
+params = struct();
+params.voxel_size = [1.0, 1.0, 1.0];         % !! 要変更 !!
+params.matrix_size = [512, 512, 23];        % !! 要変更 !!
+params.CF = 123.2 * 1e6;                       % !! 要変更 !!
+params.TE = [0.015];                           % !! 要変更 !!
+params.B0_dir = [0, 0, 1];                     % !! 要変更 !!
+
+final_matrix_x = params.matrix_size(1); % 最終的に出力する画像のサイズ
+final_matrix_y = params.matrix_size(2); 
+%%%%%%%%%%%%%%%%%%%%変更なし%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 読み込みパスを定義
+load_base_path = fullfile(image_file_0, image_file_2);
+save_path = fullfile(image_file_0, image_file_1);
+
+% 保存先フォルダが存在しない場合は作成する
+if ~exist(save_path, 'dir')
+    mkdir(save_path);
+    fprintf('保存フォルダを作成しました: %s\n', save_path);
+end
+
+
 
 % --- 2. データの読み込み ---
-filename_input_Re = fullfile('.', image_file_1, image_file_2, [input_Re_name]);
-filename_input_Im = fullfile('.', image_file_1, image_file_2, [input_Im_name]);
+%% --- 2. RAWデータの読み込み ---
+fprintf('2. RAWデータを読み込んでいます...\n');
+filename_input_Re = fullfile(load_base_path, input_Re_name); % .raw を追加
+filename_input_Im = fullfile(load_base_path, input_Im_name); % .raw を追加
 
 % ベクトルとして読み込み、3D配列に変換
 fileID_Re = fopen(filename_input_Re, 'r');
@@ -51,6 +84,7 @@ original_img_Im = reshape(data_vector_im, [orig_matrix_x, orig_matrix_y, Slice])
 
 orig_img = complex(original_img_Re, original_img_Im);
 fprintf('%d x %d x %d の画像を正常に読み込みました。\n', orig_matrix_x, orig_matrix_y, Slice);
+clear original_img_Re original_img_Im data_vector_re data_vector_im;
 
 % --- 3. k空間への変換とP0補正 ---
 k_space_orig = fftshift(fftn(orig_img));
@@ -66,6 +100,10 @@ extend_k_space = complex(zeros([orig_matrix_x magnification Slice],'double'));
 x_center = floor(orig_matrix_x / 2) + 1;
 x_start_cut = x_center - floor(cutted_matrix_x / 2);
 x_end_cut = x_start_cut+cutted_matrix_x - 1;
+
+y_center = floor(magnification / 2) + 1;
+y_start_cut = y_center - floor(cutted_matrix_y / 2);
+y_end_cut = y_start_cut+cutted_matrix_y - 1;
 
 y_center_org = floor(orig_matrix_y / 2) + 1;
 y_start_org_cut = y_center_org - floor(cutted_matrix_y / 2);
@@ -89,9 +127,6 @@ final_img = permute(final_img_shifted, [2 1 3]);
 %imshow((real(k_space_p0(:,:,1))));
 
 % ファイルを保存
-save_path = fullfile('.', image_file_1, image_file_2);
-filename_base = sprintf('1st_2DGE_0deg');
-% filename_base = sprintf('1st_%dx%d_to_%dx%d', cutted_matrix_x, cutted_matrix_y, final_matrix_x, final_matrix_y);
 save_raw_data(fullfile(save_path, [filename_base, '_Re.raw']), real(final_img));
 save_raw_data(fullfile(save_path, [filename_base, '_Im.raw']), imag(final_img));
 save_raw_data(fullfile(save_path, [filename_base, '_mag.raw']), abs(final_img));
