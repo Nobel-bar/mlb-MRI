@@ -105,8 +105,9 @@ original_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * iPhase_4D(:,:,:, echo_idx));
 
 % Highpass_img = original_img ./ fitting;  % fittingを正規化したうえで
 Highpass_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (RDF));
+
 % Back_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (iFreq - RDF));
-Back_img =  exp(1i * (iFreq - RDF)) ./abs(exp(1i * (iFreq - RDF))); % 正規化した
+Back_img =  exp(1i * (iFreq - RDF)); % 正規化した
 
 %% --- 3. 実空間データの拡張 (ゼロパディング) ---
 fprintf('3. 実空間データのY方向を拡張 (ゼロパディング) しています...\n');
@@ -139,10 +140,8 @@ large_org_Re = real(extend_org);
 large_org_Im = imag(extend_org);
 fprintf('    実数部 (original) を回転中...\n');
 rotated_org_Re = imrotate3(large_org_Re, theta, rotation_axis, 'linear', 'crop');
-fprintf('    虚数部 (original) を回転中...\n');
 rotated_org_Im = imrotate3(large_org_Im, theta, rotation_axis, 'linear', 'crop');
 extend_org_rotated = complex(rotated_org_Re, rotated_org_Im);
-% [★修正: 致命的エラー `clear ;` を修正]
 clear large_org_Re large_org_Im rotated_org_Re rotated_org_Im;
 
 % --- 4.2. Highpass_img (extend_high) の回転 ---
@@ -150,7 +149,6 @@ large_high_Re = real(extend_high);
 large_high_Im = imag(extend_high);
 fprintf('    実数部 (Highpass) を回転中...\n');
 rotated_high_Re = imrotate3(large_high_Re, theta, rotation_axis, 'linear', 'crop');
-fprintf('    虚数部 (Highpass) を回転中...\n');
 rotated_high_Im = imrotate3(large_high_Im, theta, rotation_axis, 'linear', 'crop');
 extend_high_rotated = complex(rotated_high_Re, rotated_high_Im);
 clear large_high_Re large_high_Im rotated_high_Re rotated_high_Im;
@@ -213,27 +211,36 @@ fprintf('    k空間のROIを切り出しています...\n');
 % 最終k空間 (512 x 788 x 23) をゼロで初期化
 final_k_space = complex(zeros(matrix_x, magnification, num_slices));
 
+direct_final_k_space = complex(zeros(matrix_x, magnification, num_slices));
 % [★修正: `y_start_cut` -> `y_start_org_cut`]
 % `hybrid_space` から k空間ROI (224 x 352) を切り出し、
 % `final_k_space` の同じ位置に配置　実際に読み取っている範囲
 % --- k空間ROIの絶対インデックスを計算 ---
-% [★修正: `orig_matrix_x` -> `matrix_x`]
+% [★修正: `orig_matrix_x` -> `matrix_x`])
 
-
-final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
-    hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
- 
+% 
+% final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
+%     hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
+final_k_space=hybrid_space;
+ direct_final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
+    direct_hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
 clear hybrid_space;
-
+ 
 %% --- 6. アーティファクト画像の再構成 ---
 fprintf('6. アーティファクト画像を再構成中 (ifftn)...\n');
-artifact_img_ext = ifftn(ifftshift(final_k_space));
+[max_val, max_idx] = max(abs(final_k_space(:)));
+[kk, mm, nn] = ind2sub(size(final_k_space), max_idx);
+fprintf('k空間の最大値は座標 (%d, %d, %d) にあります。\n', kk, mm, nn);
+p0_factor = final_k_space(max_idx) / max_val;
+k_space_p0 = final_k_space / p0_factor;
 
+artifact_img_ext = ifftn(ifftshift(final_k_space));
+direct_img_ext = ifftn(ifftshift(direct_final_k_space));
 clear final_k_space; 
 
 % 拡張したY次元 (788) を元のY次元 (512) に戻す (中央を切り出す)
 artifact_img = artifact_img_ext(:, y_start_final:y_end_final, :);
-
+direct_img = direct_img_ext(:, y_start_final:y_end_final, :);
 clear artifact_img_ext; 
 
 
@@ -247,7 +254,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
 
     % 現在のスライスを3Dボリュームから抽出
     % [★修正: `Mag_4D` -> `iMag_4D`]
-    original_img_slice = iMag_4D(:,:,slice_idx, echo_idx); % 強度画像を表示
+    djrect_img_slice = direct_img(:,:,slice_idx, echo_idx); % 強度画像を表示
     artifact_img_slice = artifact_img(:,:,slice_idx);
 
     % (マスク適用は省略)
@@ -257,7 +264,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
      
     % 1行2列のグリッドの1番目（左側）
     subplot(1, 2, 1);
-    imshow(original_img_slice, []);
+    imshow(abs(djrect_img_slice), []);
     title(sprintf('Original (Slice %d)', slice_idx));
      
     % 1行2列のグリッドの2番目（右側）
@@ -279,7 +286,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
 
 end % --- スライスループ (for slice_idx) の終了 ---
 % ファイル名にスライス番号を含める
-filename_base = sprintf('3d_3D_rotate_artifact_th%.1f', theta);
+filename_base = sprintf('3D_rotate_artifact_th%.1f', theta);
 save_raw_data(fullfile(save_path, [filename_base, '_Re.raw']), real(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_Im.raw']), imag(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_mag.raw']), abs(artifact_img));

@@ -16,7 +16,7 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_000; % local用
+image_file_0 = image_file_00; % slab用
 
 % 読み込みパスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
