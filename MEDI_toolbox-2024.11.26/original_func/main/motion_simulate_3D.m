@@ -3,11 +3,6 @@
 % 3D実空間で回転 (imrotate3) をシミュレートし、
 % k空間でハイブリッド化 (一部置換) を行うMATLABスクリプト
 %
-% [修正内容 v2]
-% - user_21 のコメント指示に基づき、extend_high/back の代入を修正
-% - user_21 のコメント指示に基づき、space_rotated_base の切り出し処理を追加 (推測)
-% - 未定義変数 (rotation_axis, orig_matrix_x, orig_matrix_y, Mag_4D, Slice) を修正
-% - 致命的なエラー (clear ;) を修正
 %==================================================================================================
 
 fprintf('スクリプトを開始します (3D実空間回転 + k空間ハイブリッド)\n');
@@ -43,7 +38,6 @@ end
 params = struct();
 params.matrix_size = [512, 512, 23]; % !! 要変更 !! : 行列サイズ
 params.TE = [0.015]; % !! 要変更 !! : エコー時間 (秒)
-% (他の params は現在使用されていません)
 
 % --- 拡張と回転のパラメータ ---
 extention = 2.0/1.3; % Y方向の拡張率 (約1.54倍)
@@ -107,7 +101,7 @@ original_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * iPhase_4D(:,:,:, echo_idx));
 Highpass_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (RDF));
 
 % Back_img = iMag_4D(:,:,:, echo_idx) .* exp(1i * (iFreq - RDF));
-Back_img =  exp(1i * (iFreq - RDF)); % 正規化した
+Back_img =  exp(1i * (iFreq - RDF)); 
 
 %% --- 3. 実空間データの拡張 (ゼロパディング) ---
 fprintf('3. 実空間データのY方向を拡張 (ゼロパディング) しています...\n');
@@ -118,14 +112,12 @@ extend_high = complex(zeros(matrix_x, magnification, num_slices));
 extend_back = complex(zeros(matrix_x, magnification, num_slices));
 
 % 拡張後Yサイズの中心を計算 (788/2 + 1 = 395)
-y_center_final_ext = floor(magnification / 2) + 1;
 % 元のYサイズ (512) を中央に配置するための開始・終了インデックスを計算
 % y_start_final = 395 - 256 = 139
-y_start_final = y_center_final_ext - floor(matrix_y / 2);
 % y_end_final = 139 + 512 - 1 = 650
+y_center_final_ext = floor(magnification / 2) + 1;
+y_start_final = y_center_final_ext - floor(matrix_y / 2);
 y_end_final = y_start_final + matrix_y - 1;
-
-% [★修正: user_21 コメント反映] ゼロ行列の中央にデータを代入
 extend_org(:,y_start_final:y_end_final, :) = original_img;
 extend_high(:,y_start_final:y_end_final, :) = Highpass_img; 
 extend_back(:,y_start_final:y_end_final, :) = Back_img; 
@@ -138,7 +130,7 @@ fprintf('4. 3D 実空間の回転 (imrotate3) を実行中...\n');
 % --- 4.1. original_img (extend_org) の回転 ---
 large_org_Re = real(extend_org);
 large_org_Im = imag(extend_org);
-fprintf('    実数部 (original) を回転中...\n');
+fprintf('     (original) を回転中...\n');
 rotated_org_Re = imrotate3(large_org_Re, theta, rotation_axis, 'linear', 'crop');
 rotated_org_Im = imrotate3(large_org_Im, theta, rotation_axis, 'linear', 'crop');
 extend_org_rotated = complex(rotated_org_Re, rotated_org_Im);
@@ -147,7 +139,7 @@ clear large_org_Re large_org_Im rotated_org_Re rotated_org_Im;
 % --- 4.2. Highpass_img (extend_high) の回転 ---
 large_high_Re = real(extend_high);
 large_high_Im = imag(extend_high);
-fprintf('    実数部 (Highpass) を回転中...\n');
+fprintf('     (Highpass) を回転中...\n');
 rotated_high_Re = imrotate3(large_high_Re, theta, rotation_axis, 'linear', 'crop');
 rotated_high_Im = imrotate3(large_high_Im, theta, rotation_axis, 'linear', 'crop');
 extend_high_rotated = complex(rotated_high_Re, rotated_high_Im);
@@ -165,100 +157,85 @@ clear large_high_Re large_high_Im rotated_high_Re rotated_high_Im;
 % fprintf('   3D 実空間の回転が完了しました。\n'); 
 
 % --- 4.4. 回転後実空間データの合成 ---
-% 「回転後Highpass」 * 「回転前Background(実空間)」を意図していた
-% ただし extend_back，extend_high_rotated は (512x788x23)
-space_rotated = extend_high_rotated .* extend_back;
+extend_rotated = extend_high_rotated .* extend_back;
 
 
 %% --- 5. 3D k空間データのハイブリッド化 ---
 fprintf('5. 3D k空間のハイブリッド化を実行中...\n');
 
-% [★修正: `large_org` ではなく `extend_org` (回転前実空間) をk空間へ]
+% 回転してないbase
 fprintf('    回転前のk空間 (hybrid_space) を作成中 (fftn)...\n');
-hybrid_space = fftshift(fftn(extend_org)); % 回転前 (512 x 788 x 23)
+base_and_simulate_space = fftshift(fftn(extend_org)); % 回転前 (512 x 788 x 23)
+base_and_direct_space = base_and_simulate_space;
 
-direct_hybrid_space = fftshift(fftn(extend_org_rotated)); % 回転前 (512 x 788 x 23)
-
-% [★修正: `space_rotated_base` (回転後実空間) をk空間へ]
 fprintf('    回転後のk空間 (k_space_rolate) を作成中 (fftn)...\n');
-k_space_rolate = fftshift(fftn(space_rotated)); % 回転後 (512 x 788 x 23)
+direct_space = fftshift(fftn(extend_org_rotated)); % direct 回転 (512 x 788 x 23)
+simulate_space = fftshift(fftn(extend_rotated)); % simulate 回転 (512 x 788 x 23)
 
-direct_k_space_rolate = fftshift(fftn(space_rotated)); % 回転後 (512 x 788 x 23)
 x_center = floor(matrix_x / 2) + 1; % 257
 x_start_cut = x_center - floor(cutted_matrix_x / 2); % 257 - 112 = 145
 x_end_cut = x_start_cut + cutted_matrix_x - 1; % 145 + 224 - 1 = 368
-
-% [★修正: `orig_matrix_y` -> `magnification`]
 y_center_org = floor(magnification / 2) + 1; % 788 -> 395
 y_start_org_cut = y_center_org - floor(cutted_matrix_y / 2); % 395 - 176 = 219
 y_end_org_cut = y_start_org_cut + cutted_matrix_y - 1; % 219 + 352 - 1 = 570
 
-
 % ハイブリッド化を行う行の絶対インデックス
 % (145 + 112 - 1) = 256 から 112 行分
 hybrid_row_indices = (x_start_cut + pix_start_row - 1) : (x_start_cut + pix_start_row + width - 2); 
-
+hydrid_y_indices = y_start_org_cut: y_end_org_cut;
  
 fprintf('    k空間データをハイブリッド化 (置換) しています...\n');
 % 指定された行 (256:367) を、回転後のk空間データで上書き
-hybrid_space(hybrid_row_indices, :, :) = k_space_rolate(hybrid_row_indices, :, :);
-direct_hybrid_space(hybrid_row_indices, :, :) = direct_k_space_rolate(hybrid_row_indices, :, :);
+base_and_simulate_space(hybrid_row_indices, hydrid_y_indices, :) = simulate_space(hybrid_row_indices, hydrid_y_indices, :);
+base_and_direct_space(hybrid_row_indices, hydrid_y_indices, :) = direct_space(hybrid_row_indices, hydrid_y_indices, :);
+clear simulate_space direct_space; % メモリ節約
 
-clear k_space_rolate; % メモリ節約
-
-% --- k空間のROI切り出し (ゼロパディング解除に相当) ---
-fprintf('    k空間のROIを切り出しています...\n');
-% 最終k空間 (512 x 788 x 23) をゼロで初期化
-final_k_space = complex(zeros(matrix_x, magnification, num_slices));
-
-direct_final_k_space = complex(zeros(matrix_x, magnification, num_slices));
-% [★修正: `y_start_cut` -> `y_start_org_cut`]
-% `hybrid_space` から k空間ROI (224 x 352) を切り出し、
-% `final_k_space` の同じ位置に配置　実際に読み取っている範囲
-% --- k空間ROIの絶対インデックスを計算 ---
-% [★修正: `orig_matrix_x` -> `matrix_x`])
-
+% % --- k空間のROI切り出し (ゼロパディング解除に相当) --- 多分不要
+% fprintf('    k空間のROIを切り出しています...\n');
+% % 最終k空間 (512 x 788 x 23) をゼロで初期化
+% final_k_space = complex(zeros(matrix_x, magnification, num_slices));
 % 
-% final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
-%     hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
-final_k_space=hybrid_space;
- direct_final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
-    direct_hybrid_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
-clear hybrid_space;
- 
+% direct_final_k_space = complex(zeros(matrix_x, magnification, num_slices));
+% final_k_space=base_and_simulate_space;
+%  direct_final_k_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :) = ...
+%     direct_space(x_start_cut:x_end_cut, y_start_org_cut:y_end_org_cut, :);
+% clear base_and_simulate_space;
+% 
+
 %% --- 6. アーティファクト画像の再構成 ---
 fprintf('6. アーティファクト画像を再構成中 (ifftn)...\n');
-[max_val, max_idx] = max(abs(final_k_space(:)));
-[kk, mm, nn] = ind2sub(size(final_k_space), max_idx);
+[max_val, max_idx] = max(abs(base_and_simulate_space(:)));
+[kk, mm, nn] = ind2sub(size(base_and_simulate_space), max_idx);
 fprintf('k空間の最大値は座標 (%d, %d, %d) にあります。\n', kk, mm, nn);
-p0_factor = final_k_space(max_idx) / max_val;
-k_space_p0 = final_k_space / p0_factor;
+p0_factor = base_and_simulate_space(max_idx) / max_val;
+base_and_simulate_space_p0 = base_and_simulate_space / p0_factor;
 
-artifact_img_ext = ifftn(ifftshift(final_k_space));
-direct_img_ext = ifftn(ifftshift(direct_final_k_space));
-clear final_k_space; 
+[max_val, max_idx] = max(abs(base_and_direct_space(:)));
+[kk, mm, nn] = ind2sub(size(base_and_direct_space), max_idx);
+fprintf('k空間の最大値は座標 (%d, %d, %d) にあります。\n', kk, mm, nn);
+p0_factor = base_and_direct_space(max_idx) / max_val;
+base_and_direct_space_p0 = base_and_direct_space / p0_factor;
+
+artifact_img_ext = ifftn(ifftshift(base_and_simulate_space_p0));
+direct_img_ext = ifftn(ifftshift(base_and_direct_space_p0));
+clear base_and_simulate_space_p0 base_and_direct_space_p0; 
 
 % 拡張したY次元 (788) を元のY次元 (512) に戻す (中央を切り出す)
 artifact_img = artifact_img_ext(:, y_start_final:y_end_final, :);
 direct_img = direct_img_ext(:, y_start_final:y_end_final, :);
-clear artifact_img_ext; 
+clear artifact_img_ext direct_img_ext; 
 
 
 %% --- 7. スライスごとの表示と保存 ---
 fprintf('7. スライスごとの表示と保存を開始します...\n');
 
-% [★修正: `Slice` -> `num_slices`]
 for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     
     fprintf('   --- スライス %d / %d を処理中 ---\n', slice_idx, num_slices);
 
     % 現在のスライスを3Dボリュームから抽出
-    % [★修正: `Mag_4D` -> `iMag_4D`]
-    djrect_img_slice = direct_img(:,:,slice_idx, echo_idx); % 強度画像を表示
-    artifact_img_slice = artifact_img(:,:,slice_idx);
-
-    % (マスク適用は省略)
-
+    djrect_img_slice = permute(djrect_img_slice(:,:,slice_idx), [2 1]);
+    artifact_img_slice = permute(artifact_img(:,:,slice_idx), [2 1]);
     % 各スライスごとに新しいFigureを作成する
     figure('Name', sprintf('Slice %d Comparison', slice_idx), 'WindowState', 'maximized');
      
@@ -279,11 +256,8 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
      
     % 最終画像を permute (転置) する
     % (注: 以前の 2D スクリプトでは転置していた)
-    % final_artifact_img_slice = permute(artifact_img_slice, [2 1]);
-    final_artifact_img_slice = artifact_img_slice; % 3D処理では転置不要と仮定
+
      
-
-
 end % --- スライスループ (for slice_idx) の終了 ---
 % ファイル名にスライス番号を含める
 filename_base = sprintf('3D_rotate_artifact_th%.1f', theta);
