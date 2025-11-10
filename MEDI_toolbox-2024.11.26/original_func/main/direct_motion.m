@@ -216,6 +216,12 @@ base_and_direct_space_p0 = base_and_direct_space / p0_factor;
 direct_img_ext = ifftn(ifftshift(base_and_direct_space_p0));
 clear base_and_simulate_space_p0 base_and_direct_space_p0; 
 
+% 拡張したY次元 (788) を元のY次元 (512) に戻す (中央を切り出す)
+% artifact_img = artifact_img_ext(:, y_start_final:y_end_final, :);
+direct_img = direct_img_ext(:, y_start_final:y_end_final, :);
+clear artifact_img_ext direct_img_ext; 
+
+
 %% --- 7. スライスごとの表示と保存 ---
 fprintf('7. スライスごとの表示と保存を開始します...\n');
 
@@ -224,7 +230,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     fprintf('   --- スライス %d / %d を処理中 ---\n', slice_idx, num_slices);
 
     % 現在のスライスを3Dボリュームから抽出
-    djrect_img_slice = permute(djrect_img_slice(:,:,slice_idx), [2 1]);
+    djrect_img_slice = permute(direct_img(:,:,slice_idx), [2 1]);
     original_img_slice = permute(iMag_4D(:,:,slice_idx, echo_idx), [2 1]);
 
     % 各スライスごとに新しいFigureを作成する
@@ -244,10 +250,6 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     drawnow;
      
     %% --- 8. (修正) 結果のファイル保存 (ループ内に移動) ---
-     
-    % 最終画像を permute (転置) する
-    % (注: 以前の 2D スクリプトでは転置していた)
-    final_artifact_img_slice = permute(artifact_img_slice, [2 1]);
      
 end % --- スライスループ (for slice_idx) の終了 ---
 % ファイル名にスライス番号を含める

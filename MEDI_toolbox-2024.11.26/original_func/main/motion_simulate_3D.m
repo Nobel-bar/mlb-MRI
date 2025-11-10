@@ -145,19 +145,19 @@ rotated_high_Im = imrotate3(large_high_Im, theta, rotation_axis, 'linear', 'crop
 extend_high_rotated = complex(rotated_high_Re, rotated_high_Im);
 clear large_high_Re large_high_Im rotated_high_Re rotated_high_Im;
 % 
-% % --- 4.3. Back_img (extend_back) の回転 ---
-% large_back_Re = real(extend_back);
-% large_back_Im = imag(extend_back);
-% fprintf('    実数部 (Background) を回転中...\n');
-% rotated_back_Re = imrotate3(large_back_Re, theta, rotation_axis, 'linear', 'crop');
-% fprintf('    虚数部 (Background) を回転中...\n');
-% rotated_back_Im = imrotate3(large_back_Im, theta, rotation_axis, 'linear', 'crop');
-% extend_back_rotated = complex(rotated_back_Re, rotated_back_Im);
-% clear large_back_Re large_back_Im rotated_back_Re rotated_back_Im;
-% fprintf('   3D 実空間の回転が完了しました。\n'); 
+% --- 4.3. Back_img (extend_back) の回転 ---
+large_back_Re = real(extend_back);
+large_back_Im = imag(extend_back);
+fprintf('    実数部 (Background) を回転中...\n');
+rotated_back_Re = imrotate3(large_back_Re, theta, rotation_axis, 'linear', 'crop');
+fprintf('    虚数部 (Background) を回転中...\n');
+rotated_back_Im = imrotate3(large_back_Im, theta, rotation_axis, 'linear', 'crop');
+extend_back_rotated = complex(rotated_back_Re, rotated_back_Im);
+clear large_back_Re large_back_Im rotated_back_Re rotated_back_Im;
+fprintf('   3D 実空間の回転が完了しました。\n'); 
 
 % --- 4.4. 回転後実空間データの合成 ---
-extend_rotated = extend_high_rotated .* extend_back;
+extend_rotated = extend_high_rotated .* extend_back_rotated;
 
 
 %% --- 5. 3D k空間データのハイブリッド化 ---
@@ -234,7 +234,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
     fprintf('   --- スライス %d / %d を処理中 ---\n', slice_idx, num_slices);
 
     % 現在のスライスを3Dボリュームから抽出
-    djrect_img_slice = permute(djrect_img_slice(:,:,slice_idx), [2 1]);
+    djrect_img_slice = permute(direct_img(:,:,slice_idx), [2 1]);
     artifact_img_slice = permute(artifact_img(:,:,slice_idx), [2 1]);
     % 各スライスごとに新しいFigureを作成する
     figure('Name', sprintf('Slice %d Comparison', slice_idx), 'WindowState', 'maximized');
@@ -260,7 +260,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
      
 end % --- スライスループ (for slice_idx) の終了 ---
 % ファイル名にスライス番号を含める
-filename_base = sprintf('3D_rotate_artifact_th%.1f', theta);
+filename_base = sprintf('haten3D_rotate_artifact_th%.1f', theta);
 save_raw_data(fullfile(save_path, [filename_base, '_Re.raw']), real(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_Im.raw']), imag(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_mag.raw']), abs(artifact_img));
