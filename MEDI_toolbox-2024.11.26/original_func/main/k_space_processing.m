@@ -3,7 +3,6 @@ close all;
 
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!% 2Drotate 
-image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_000 = "C:\Users\hamaguchi\Downloads\matlab";
@@ -13,6 +12,8 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 image_file_0 = image_file_00;
+image_file_0 = image_file_000;
+
 
 % 入力ファイル名 (拡張子なし) % --- サイズに関するパラメータ ---2D用
 input_Re_name = 'Real_0ch__1_1_1_1_1_0_0_1_23_1_1_1';

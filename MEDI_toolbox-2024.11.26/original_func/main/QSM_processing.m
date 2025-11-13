@@ -12,14 +12,19 @@ fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
+image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H'";
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00; % slab用
+image_file_0 = image_file_00;
+image_file_0 = image_file_000;
+image_file_0 = image_file_2DGE_1_2_Rotate_H_local;
 
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
@@ -53,6 +58,10 @@ params.B0_dir = [0, 0, 1];
 % ご自身のファイルが保存されている実際のパスに書き換えてください。
 mag_filepath =fullfile(load_base_path, '1st_2DGE_0deg_mag.raw');
 phase_filepath =fullfile(load_base_path, '1st_2DGE_0deg_phase.raw');
+mag_filepath =fullfile(load_base_path, '1st_2DGE_1_2_Rotate_mag.raw');
+phase_filepath =fullfile(load_base_path, '1st_2DGE_1_2_Rotate_phase.raw');
+
+
 
 %% --- 3. 新しい関数でデータを読み込む ---
 % Read_Raw_Data関数からすべての出力変数を受け取ります。

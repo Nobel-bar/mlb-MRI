@@ -21,7 +21,7 @@ image_file_000 = "C:\Users\hamaguchi\Downloads\matlab";
 % ★ 読み込むデータに合わせて、この2行をアクティブ化してください
 % image_file_0 = image_file_00; % 0deg データの場合
 image_file_0 = image_file_2DGE_1_2_Rotate_H; % 1-2_Rotate データの場合
-% image_file_0 = image_file_000; % local用
+image_file_0 = image_file_000; % local用
 
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
@@ -29,14 +29,14 @@ image_file_2 = '2_original_data';
 % ★ 読み込むデータに合わせて、filename_base を選択してください
 % filename_base = sprintf('1st_2DGE_0deg_15'); 
 filename_base = sprintf('1st_2DGE_1_2_Rotate'); 
-% filename_base = sprintf('1st_3DGE_0deg');
+filename_base = sprintf('spin');
 
-filename_base = sprintf('3d_3D_rotate_direct_th-18.6'); 
+% filename_base = sprintf('3d_3D_rotate_direct_th-18.6'); 
 
 
 % 読み込みパスを定義 (直前のスクリプト [cite: 該当コード] の `save_path` [cite: 該当コード])
-% load_path = fullfile(image_file_0, image_file_1); % '1_data' フォルダから読み込む
-load_path = "F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H\4_rolate_output_data\direct";
+load_path = fullfile(image_file_0, image_file_1); % '1_data' フォルダから読み込む
+% load_path = "F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H\4_rolate_output_data\direct";
 
 % 読み込むファイル名
 load_mag_name = [filename_base, '_mag.raw']; % 強度画像を読み込む
