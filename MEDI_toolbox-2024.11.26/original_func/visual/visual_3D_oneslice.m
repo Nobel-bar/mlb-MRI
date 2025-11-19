@@ -14,18 +14,21 @@ close all;
 
 %% --- 1. 初期設定 ---
 fprintf('1. パラメータを設定しています...\n');
-
-
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_000 = "C:\Users\hamaguchi\Downloads\matlab";
+image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H'";
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_000; % local用
+image_file_0 = image_file_00;
+image_file_0 = image_file_000;
+image_file_0 = image_file_2DGE_1_2_Rotate_H_local;
+
 
 
 % 読み込みパスを定義

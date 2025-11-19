@@ -82,8 +82,7 @@ fprintf('データの読み込みが完了しました。磁化率マップの�
 % FSLのBETツール（要インストール）を使用するのが一般的です。
 iMag = sqrt(sum(abs(iField).^2, 4)); % 全エコーの振幅を合成
 Mask = BET(iMag, matrix_size, voxel_size); 
-
-% save(fullfile(save_path, 'Mask.mat'), 'Mask', 'iMag');
+save(fullfile(save_path, 'Mask.mat'), 'Mask', 'iMag');
 
 %% 2. 磁場マップとノイズの推定
 % マルチエコーの複素数データ(iField)から、位相変化をフィッティングして
@@ -111,7 +110,7 @@ else
 end
 
 
-% save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
+save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
 
 %% 4. 背景磁場除去
 % 脳組織外に由来する背景磁場を除去し、局所磁場マップ(RDF)を生成します。
@@ -119,7 +118,7 @@ end
 RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
 
  
-% save(fullfile(save_path, 'PDF.mat'), 'RDF');
+save(fullfile(save_path, 'PDF.mat'), 'RDF');
 
 %% 5. QSM再構成 (MEDI_L1)
 % これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
@@ -130,7 +129,7 @@ RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
 R2s = arlo(TE, abs(iField));
 Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
 
-% save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
 
 path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
 save(fullfile(path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
@@ -140,7 +139,7 @@ QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
 
 fprintf('スクリプトのこの部分までの処理が完了しました。\n');
 
-% save(fullfile(save_path, 'QSM.mat'), 'QSM');
+save(fullfile(save_path, 'QSM.mat'), 'QSM');
 % export QSM variable as dicom files in the 'QSM' directory
 Write_DICOM(QSM, files, 'QSM')
 
