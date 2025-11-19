@@ -12,18 +12,16 @@ close all;
 %% --- 1. 撮像・シミュレーション パラメータ設定 ---
 fprintf('1. パラメータを設定しています...\n');
 
+% パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
-image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H";
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00;
-image_file_0 = image_file_000;
+image_file_0 = image_file_00; % slab用
 
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
@@ -159,7 +157,7 @@ clear large_back_Re large_back_Im rotated_back_Re rotated_back_Im;
 fprintf('   3D 実空間の回転が完了しました。\n'); 
 
 % --- 4.4. 回転後実空間データの合成 ---
-extend_rotated =	 .* extend_back_rotated;
+extend_rotated = extend_high_rotated .* extend_back_rotated;
 
 
 %% --- 5. 3D k空間データのハイブリッド化 ---
@@ -184,12 +182,14 @@ y_end_org_cut = y_start_org_cut + cutted_matrix_y - 1; % 219 + 352 - 1 = 570
 % ハイブリッド化を行う行の絶対インデックス
 % (145 + 112 - 1) = 256 から 112 行分
 hybrid_row_indices = (x_start_cut + pix_start_row - 1) : (x_start_cut + pix_start_row + width - 2); 
+hybrid_row_indices = x_start_cut:x_end_cut;
 hydrid_y_indices = y_start_org_cut: y_end_org_cut;
+hydrid_z_indices = 13:23;
  
 fprintf('    k空間データをハイブリッド化 (置換) しています...\n');
 % 指定された行 (256:367) を、回転後のk空間データで上書き
-base_and_simulate_space(hybrid_row_indices, hydrid_y_indices, :) = simulate_space(hybrid_row_indices, hydrid_y_indices, :);
-base_and_direct_space(hybrid_row_indices, hydrid_y_indices, :) = direct_space(hybrid_row_indices, hydrid_y_indices, :);
+base_and_simulate_space(hybrid_row_indices, hydrid_y_indices, hydrid_z_indices) = simulate_space(hybrid_row_indices, hydrid_y_indices, hydrid_z_indices);
+base_and_direct_space(hybrid_row_indices, hydrid_y_indices, hydrid_z_indices) = direct_space(hybrid_row_indices, hydrid_y_indices, hydrid_z_indices);
 clear simulate_space direct_space; % メモリ節約
 
 % % --- k空間のROI切り出し (ゼロパディング解除に相当) --- 多分不要
@@ -262,7 +262,7 @@ for slice_idx = 12:12 % (デバッグのためスライス12のみ)
      
 end % --- スライスループ (for slice_idx) の終了 ---
 % ファイル名にスライス番号を含める
-filename_base = sprintf('haten3D_rotate_artifact_th%.1f', theta);
+filename_base = sprintf('thice_artifact_th%.1f', theta);
 save_raw_data(fullfile(save_path, [filename_base, '_Re.raw']), real(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_Im.raw']), imag(artifact_img));
 save_raw_data(fullfile(save_path, [filename_base, '_mag.raw']), abs(artifact_img));

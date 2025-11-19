@@ -270,9 +270,7 @@ for slice_idx = 1:num_slices
     else
         % fprintf('7. スライス %d の表示はスキップします。\n', slice_idx);
     end
-    
-% [★重大な構文エラー修正]
-% end % --- スライスループ (for slice_idx) の終了 ---の表示 --- % [★誤り]
+   
 end % --- スライスループ (for slice_idx) の終了 ---
 
 
