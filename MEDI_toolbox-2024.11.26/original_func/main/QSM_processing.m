@@ -12,7 +12,7 @@ fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
-image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+
 image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H'";
@@ -22,12 +22,17 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00;
-image_file_0 = image_file_000;
-image_file_0 = image_file_2DGE_1_2_Rotate_H_local;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_file_temp = "F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H"; % !! 要変更 !!
+image_file_0 = image_file_temp;
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
+%% --- 2. rawファイルのパスを指定 ---
+% ご自身のファイルが保存されている実際のパスに書き換えてください。
+mag_filepath =fullfile(load_base_path, '2DGE_Rotate_H_mag.raw');
+phase_filepath =fullfile(load_base_path, '2DGE_Rotate_H_phase.raw');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 save_path = fullfile(image_file_0, image_file_3);
 
@@ -54,12 +59,6 @@ params.TE = [0.015];
 % 静磁場の方向 [x, y, z] (通常は [0, 0, 1] または [0, 0, -1] です)
 params.B0_dir = [0, 0, 1];
 
-%% --- 2. rawファイルのパスを指定 ---
-% ご自身のファイルが保存されている実際のパスに書き換えてください。
-mag_filepath =fullfile(load_base_path, '1st_2DGE_0deg_mag.raw');
-phase_filepath =fullfile(load_base_path, '1st_2DGE_0deg_phase.raw');
-mag_filepath =fullfile(load_base_path, '1st_2DGE_1_2_Rotate_mag.raw');
-phase_filepath =fullfile(load_base_path, '1st_2DGE_1_2_Rotate_phase.raw');
 
 
 
