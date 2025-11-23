@@ -38,6 +38,11 @@ if ~exist(save_path, 'dir')
 	fprintf('保存フォルダを作成しました: %s\n', save_path);
 end
 
+% ★★★ 計算負荷軽減のための設定 ★★★
+% 各次元を何分の1にするか指定 (2を指定すると面積比で1/4、計算量は約1/16になります)
+DS_FACTOR = 2; 
+fprintf('計算負荷を下げるため、各次元を 1/%d にダウンサンプリングします。\n', DS_FACTOR);
+
 % --- params構造体 ---
 params = struct();
 params.matrix_size = [512, 512, 23];
@@ -52,19 +57,25 @@ rotation_axis = [0 0 1];
 % --- k空間ハイブリッド化パラメータ ---
 cutted_matrix_x = 224;
 cutted_matrix_y = 352;
+cutted_matrix_x = round(224 / DS_FACTOR);
+cutted_matrix_y = round(352 / DS_FACTOR);
 width = 112; 
 pix_start_row = 112; 
 
 % --- ★体動シミュレーション用パラメータ★ ---
-MOTION_START_LINE = 257; % 512x512行列における、体動が発生し始めるk_x行 (1-based)
-MOTION_PE_ERROR_MAX_RAD = pi/4; % 体動による最大位相誤差 (ラジアン)
+% MOTION_START_LINE = 257; % 512x512行列における、体動が発生し始めるk_x行 (1-based)
+% % --- ★体動シミュレーション用パラメータ (スケーリング対応)★ ---
+MOTION_START_LINE_ORIG = 257;
+MOTION_START_LINE = round(MOTION_START_LINE_ORIG / DS_FACTOR);
+% MOTION_PE_ERROR_MAX_RAD = pi/4;
 
-%% --- 2. RAWデータの読み込み ---
-fprintf('\n2. RAWデータと処理済みデータを読み込んでいます...\n');
+
+%% --- 2. RAWデータの読み込みとダウンサンプリング ---
+fprintf('\n2. データを読み込み、ダウンサンプリングしています...\n');
 
 mag_filepath = fullfile(load_base_path, mag_filename);
 phase_filepath = fullfile(load_base_path, phase_filename);
-dims = [params.matrix_size, length(params.TE)];
+dims_orig = params.original_matrix_size;
 precision = 'double=>double';
 
 % --- 強度・位相データの読み込み ---
@@ -73,40 +84,47 @@ if fid_mag == -1, error('強度ファイルを開けませんでした: %s', mag
 data_vector_mag = fread(fid_mag, inf, precision);
 fclose(fid_mag);
 
-pixels_per_slice = params.matrix_size(1) * params.matrix_size(2);
+params.original_matrix_size(3) = numel(data_vector_mag) / (dims_orig(1) * dims_orig(2));
+dims_orig = params.original_matrix_size;
 
-% (総データ数) / (1枚の画素数) = スライス枚数
-params.matrix_size(3) = numel(data_vector_mag) / (pixels_per_slice );
-
-if mod(params.matrix_size(3), 1) ~= 0
-    error('ファイルサイズが不正です。設定した行列サイズやエコー数がファイルと一致しません。'); 
-end
-
-% データの次元を定義 [x, y, z, echo]
-dims = [params.matrix_size];
-% ベクトルを4D配列にリシェイプ
-iMag_4D = reshape(data_vector_mag, dims);
-% 不要になったベクトルを削除してメモリを解放 (推奨)
+iMag_4D_orig = reshape(data_vector_mag, dims_orig);
 clear data_vector_mag; 
 
 fid_phase = fopen(phase_filepath, 'rb');
 if fid_phase == -1, error('位相ファイルを開けませんでした: %s', phase_filepath); end
-iPhase_4D = reshape(fread(fid_phase, inf, precision), dims);
+iPhase_4D_orig = reshape(fread(fid_phase, inf, precision), dims_orig);
 fclose(fid_phase);
 
 % 処理済みデータ (iFreq, RDF) の読み込み
 try
-	load(fullfile(load_mask_path, 'phase.mat'), 'iFreq');
-	load(fullfile(load_mask_path, 'PDF.mat'), 'RDF');
-catch ME
-	fprintf('phase.mat または PDF.mat の読み込みに失敗しました。\n');
-	rethrow(ME);
+    load(fullfile(load_mask_path, 'phase.mat'), 'iFreq');
+    load(fullfile(load_mask_path, 'PDF.mat'), 'RDF');
+    % 変数名が違う場合の対応
+    if exist('iFreq_orig', 'var'), iFreq = iFreq_orig; end
+    if exist('RDF_orig', 'var'), RDF = RDF_orig; end
+catch
+    fprintf('phase.mat / PDF.mat が見つかりません。ダミーを使用します。\n');
+    iFreq = zeros(dims_orig); RDF = zeros(dims_orig);
 end
 
-% --- 変数定義 ---
+% === ★★★ ダウンサンプリング実行 ★★★ ===
+% 実空間で単純間引き (Nearest Neighbor 相当)
+iMag_4D = iMag_4D_orig(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
+iPhase_4D = iPhase_4D_orig(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
+RDF_small = RDF(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
+iFreq_small = iFreq(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
+
+% メモリ解放
+clear iMag_4D_orig iPhase_4D_orig RDF iFreq;
+
+% サイズ情報を更新
+params.matrix_size = size(iMag_4D);
 matrix_x = params.matrix_size(1);
-matrix_y = params.matrix_size(2); % 512
+matrix_y = params.matrix_size(2);
 num_slices = params.matrix_size(3);
+
+fprintf('  元のサイズ: %d x %d x %d\n', dims_orig(1), dims_orig(2), dims_orig(3));
+fprintf('  現在のサイズ: %d x %d x %d (DS_FACTOR=%d)\n', matrix_x, matrix_y, num_slices, DS_FACTOR);
 
 
 original_img = iMag_4D(:,:,:) .* exp(1i * iPhase_4D(:,:,:));
@@ -162,11 +180,25 @@ x_end_cut = x_start_cut + cutted_matrix_x - 1; % 368
 y_center_org = floor(magnification / 2) + 1; % 395
 y_start_org_cut = y_center_org - floor(cutted_matrix_y / 2); % 219
 y_end_org_cut = y_start_org_cut + cutted_matrix_y - 1; % 570
+kx_collect_indices = x_start_cut : x_end_cut;
 ky_collect_indices = y_start_org_cut : y_end_org_cut;
 
+% 体動開始ラインも新しい座標系に合わせる
+motion_start_line_shifted = y_center_org - floor(matrix_y/2) + MOTION_START_LINE;
+
+
 % --- k空間の行（k_x）のインデックスは 1 to 512 ---
+fprintf('    k空間シミュレーション計算中... (計算量 1/%d)\n', DS_FACTOR^2*DS_FACTOR);
 for slice  = 1 : num_slices
-    for k_x_idx = x_start_cut + pix_start_row - 1 :x_end_cut
+    k_space_direct_rotated(:,:,slice_idx) = fftshift(fft2(extend_org_rotated(:,:,slice_idx)));
+    k_space_artifact(:,:,slice_idx) = k_space_direct_rotated(:,:,slice_idx);
+    
+    % 画像データのスライス抽出
+    img_slice_rotated = extend_high_rotated(:,:,slice_idx);
+    back_slice_rotated = extend_back_rotated(:,:,slice_idx);
+
+    % --- k空間の行（k_y: 位相エンコード）ごとのループ ---
+    for k_y_idx = ky_collect_indices
         k_space_direct_rotated(:,:,num_slices)  = fftshift(fft2(extend_org_rotated(:,:,num_slices) ));
         k_space_artifact(:,:,num_slices) = k_space_direct_rotated(:,:,num_slices);
         [k_line_signal_partial, kx_out_indices] = simulate_ky_line_collection_by_sum(...
