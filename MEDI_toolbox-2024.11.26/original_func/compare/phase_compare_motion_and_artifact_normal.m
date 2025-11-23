@@ -3,7 +3,7 @@
 
 
 % !! 以下 3 行のファイルパスは、ユーザーの環境に合わせて適切に設定してください !!
-image_file_2DGE_0deg_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_0deg_H = 'F:\hamaguchi\copy\20241205_RawD   ata_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_2DGE_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
@@ -23,9 +23,9 @@ base_path_with_motion = image_file_2DGE_Rotate_H;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 読み込みパスの定義
-load_path_no_motion = fullfile(base_path_no_motion, output_folder);
-load_path_with_artifact = fullfile(base_path_with_artifact, output_folder);
-load_path_with_motion = fullfile(base_path_with_motion, output_folder);
+load_path_no_motion = fullfile(base_path_no_motion, image_file_3);
+load_path_with_artifact = fullfile(base_path_with_artifact, image_file_3);
+load_path_with_motion = fullfile(base_path_with_motion, image_file_3);
 
 
 % --- 2. データの読み込み ---
