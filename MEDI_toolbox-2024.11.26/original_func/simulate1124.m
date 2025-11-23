@@ -46,6 +46,7 @@ fprintf('計算負荷を下げるため、各次元を 1/%d にダウンサン�
 % --- params構造体 ---
 params = struct();
 params.matrix_size = [512, 512, 23];
+params.original_matrix_size = [512, 512, 23];
 params.TE = [0.015]; 
 
 % --- 拡張と回転のパラメータ ---
@@ -128,8 +129,8 @@ fprintf('  現在のサイズ: %d x %d x %d (DS_FACTOR=%d)\n', matrix_x, matrix_
 
 
 original_img = iMag_4D(:,:,:) .* exp(1i * iPhase_4D(:,:,:));
-Highpass_img = iMag_4D(:,:,:) .* exp(1i * (RDF));
-Back_img = exp(1i * (iFreq - RDF)); % 背景磁場成分 (位相項)
+Highpass_img = iMag_4D(:,:,:) .* exp(1i * (RDF_small));
+Back_img = exp(1i * (iFreq_small - RDF_small)); % 背景磁場成分 (位相項)
 
 fprintf('データの読み込み完了。%d スライスを処理します。\n', num_slices);
 
@@ -188,8 +189,10 @@ motion_start_line_shifted = y_center_org - floor(matrix_y/2) + MOTION_START_LINE
 
 
 % --- k空間の行（k_x）のインデックスは 1 to 512 ---
+tic; % ★計測スタート
 fprintf('    k空間シミュレーション計算中... (計算量 1/%d)\n', DS_FACTOR^2*DS_FACTOR);
-for slice  = 1 : num_slices
+for slice_idx  = 1 : num_slices
+    fprintf('      Slice %d/%d processing...\n', slice_idx, num_slices);
     k_space_direct_rotated(:,:,slice_idx) = fftshift(fft2(extend_org_rotated(:,:,slice_idx)));
     k_space_artifact(:,:,slice_idx) = k_space_direct_rotated(:,:,slice_idx);
     
@@ -202,14 +205,19 @@ for slice  = 1 : num_slices
         k_space_direct_rotated(:,:,num_slices)  = fftshift(fft2(extend_org_rotated(:,:,num_slices) ));
         k_space_artifact(:,:,num_slices) = k_space_direct_rotated(:,:,num_slices);
         [k_line_signal_partial, kx_out_indices] = simulate_ky_line_collection_by_sum(...
-        extend_high_rotated, extend_back_rotated, k_x_idx, ky_collect_indices);
+        extend_high_rotated, extend_back_rotated, k_y_idx, kx_collect_indices);
 
         % k_space_artifact の k_y_idx 列の、k_x_out_indices の行に代入
         k_space_artifact(kx_out_indices, k_y_idx, slice_idx) = k_line_signal_partial;
     end
+    fprintf('      Slice %d/%d processing_end...\n', slice_idx, num_slices);
 end 
 % --- k_x_idx ループの終了 ---
 
+elapsedTime = toc; % ★計測ストップ
+fprintf('\n--------------------------------------\n');
+fprintf('計算にかかった時間: %.2f 秒 (約 %.1f 分)\n', elapsedTime, elapsedTime/60);
+fprintf('--------------------------------------\n');
 
 % --- 5.3. ハイブリッド化 (データの置換) ---
 fprintf('    k空間データをハイブリッド化しています...\n');
