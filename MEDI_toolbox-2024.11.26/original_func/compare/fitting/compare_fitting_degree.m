@@ -1,6 +1,6 @@
 %================================================================
 % PDF (背景磁場除去) および 多項式フィッティング結果 比較用プログラム
-%
+%　フィッティングの次元で比較している
 % 概要:
 %   PDF適用前の磁場マップ (iFreq) と
 %   PDF適用後の局所磁場マップ (RDF) 、
@@ -25,6 +25,8 @@ fprintf('1. パラメータを設定し、共通データを読み込んでい�
 
 % パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
@@ -32,7 +34,11 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00; % slab用
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_file_0 = image_file_00;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_path = fullfile(image_file_0, image_file_3);
 load_fitting_path = fullfile(image_file_0, image_file_5);

@@ -1,3 +1,8 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% kスペースの使用範囲による画像の違いをしめすもの
+%%%%%%%%%%%%%%%%%%%%%%%
+
 clear;
 close all;
 clc;
@@ -14,16 +19,21 @@ image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
-image_file_0 = image_file_000; % local用
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_file_0 = image_file_00; % local用
+mag_filename = '1st_2DGE_0deg_mag.raw'; % !! 要変更 !!
+phase_filename = '1st_2DGE_0deg_phase.raw'; % !! 要変更 !!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 読み込みパスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
 
 % 入力ファイル名 (拡張子なし)
 %% --- 2. rawファイルのパスを指定 ---
 % ご自身のファイルが保存されている実際のパスに書き換えてください。
-mag_filename = '1st_2DGE_0deg_mag.raw'; % !! 要変更 !!
-phase_filename = '1st_2DGE_0deg_phase.raw'; % !! 要変更 !!
+
 
 mag_filepath = fullfile(load_base_path, mag_filename);
 phase_filepath = fullfile(load_base_path, phase_filename);

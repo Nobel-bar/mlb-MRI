@@ -21,19 +21,32 @@ close all;
 
 %% --- 1. データ読み込み ---
 % (パスはご自身の環境に合わせて設定してください)
-image_file_1 = 'F:/hamaguchi/copy/20241205_RawData_H/Volunteer_Rotate_H/2DGE_0deg_H/total_slice';
-image_file_2 = 'output_data';
+image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
+image_file_1 = '1_data';
+image_file_2 = '2_original_data';
+image_file_3 = '3_output_data'; 
+image_file_4 = '4_rolate_output_data'; 
+image_file_5 = '5_fitting_output_data'; 
 
-save_path = fullfile(image_file_1, image_file_2);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_file_0 = image_file_2DGE_1_2_Rotate_H;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+load_path = fullfile(image_file_0, image_file_3);
 
 fprintf('データを読み込んでいます...\n');
 try
-    load(fullfile(save_path, 'phase.mat'), 'iFreq');
-    load(fullfile(save_path, 'PDF.mat'), 'RDF');
-    load(fullfile(save_path, 'Mask.mat'), 'Mask');
+    load(fullfile(load_path, 'phase.mat'), 'iFreq');
+    load(fullfile(load_path, 'PDF.mat'), 'RDF');
+    load(fullfile(load_path, 'Mask.mat'), 'Mask');
 catch ME
     fprintf('ファイルの読み込みに失敗しました。\n');
-    fprintf('phase.mat, PDF.mat, Mask.mat が %s に存在するか確認してください。\n', save_path);
+    fprintf('phase.mat, PDF.mat, Mask.mat が %s に存在するか確認してください。\n', load_path);
     rethrow(ME);
 end
 

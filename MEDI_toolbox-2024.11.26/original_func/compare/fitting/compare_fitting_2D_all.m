@@ -1,6 +1,8 @@
 %================================================================
-% PDF (背景磁場除去) 結果 確認用プログラム (全スライス表示版)
+% fitting 結果 確認用プログラム　シングルスライス
 % 
+% 左側: PDF適用前 (iFreq)% 3. 中央: PDF適用後 (RDF)，右側　homo_RDF = iFreq - fitting;
+%
 % 概要:
 %   QSM_processing.m で計算された、PDF適用前の磁場マップ (iFreq) と
 %   適用後の局所磁場マップ (RDF)、および多項式補正後のマップ (homo_RDF) を
@@ -20,10 +22,9 @@ clear variables;
 close all;
 
 %% --- 1. 初期設定とデータ読み込み ---
-fprintf('1. パラメータを設定し、データを読み込んでいます...\n');
-
-% パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
@@ -31,7 +32,11 @@ image_file_3 = '3_output_data';
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
-image_file_0 = image_file_00; % slab用
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_file_0 = image_file_00;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_path = fullfile(image_file_0, image_file_3);
 load_fitting_path = fullfile(image_file_0, image_file_5);
