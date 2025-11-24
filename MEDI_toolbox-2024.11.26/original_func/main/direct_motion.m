@@ -10,21 +10,30 @@ clear variables;
 close all;
 
 %% --- 1. 撮像・シミュレーション パラメータ設定 ---
-fprintf('1. パラメータを設定しています...\n');
-
-% パス設定
 image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H";
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_file_0 = image_file_00;
-image_file_0 = image_file_000;
+mag_filename = '1st_2DGE_0deg_mag.raw'; % !! 要変更 !!
+phase_filename = '1st_2DGE_0deg_phase.raw'; % !! 要変更 !!
+
+% --- 拡張と回転のパラメータ ---
+extention = 2.0/1.3; % Y方向の拡張率 (約1.54倍)
+magnification = round( params.matrix_size(2) * extention); % 拡張後のYサイズ (512 -> 788)
+theta = -18.6; % 回転角度 (度)
+rotation_axis = [0 0 1]; % 回転軸 (Z軸) [★修正: 未定義変数を定義]
+% ファイル名にスライス番号を含める
+filename_base = sprintf('3D_rotate_direct_th%.1f', theta);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
 load_mask_path = fullfile(image_file_0, image_file_3);
@@ -47,7 +56,6 @@ extention = 2.0/1.3; % Y方向の拡張率 (約1.54倍)
 magnification = round( params.matrix_size(2) * extention); % 拡張後のYサイズ (512 -> 788)
 theta = -18.6; % 回転角度 (度)
 rotation_axis = [0 0 1]; % 回転軸 (Z軸) [★修正: 未定義変数を定義]
-IdealSize = 512; % 画像処理の基準サイズ (現在未使用)
 
 % --- k空間ハイブリッド化パラメータ ---
 cutted_matrix_x = 224; % 実際に収集されたk空間の有効データサイズ
@@ -58,9 +66,7 @@ pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
 %% --- 2. RAWデータの読み込み ---
 fprintf('2. RAWデータと処理済みデータを読み込んでいます...\n');
 
-% ファイル名
-mag_filename = '1st_2DGE_0deg_mag.raw'; % !! 要変更 !!
-phase_filename = '1st_2DGE_0deg_phase.raw'; % !! 要変更 !!
+
 
 mag_filepath = fullfile(load_base_path, mag_filename);
 phase_filepath = fullfile(load_base_path, phase_filename);
