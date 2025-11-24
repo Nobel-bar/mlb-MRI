@@ -238,16 +238,14 @@ end
 
 
 % =========================================================
-% ★★★ 行列演算版シミュレーション関数 (位相整合修正版) ★★★
+% ★★★ 行列演算版シミュレーション関数  ★★★
 % =========================================================
 function k_space_line_signal = simulate_ky_line_fast(image_data, background_phase, ky_line_index, kx_collect_indices)
+    % image_data 実空間画像
     [Nx, Ny] = size(image_data);
+        
+
     
-    % --- 1. 画像データは「シフトしない」 ---
-    % 背景データ(k_space_direct_rotated)は fftshift(fft2(元の画像)) で作られています。
-    % これと混ぜ合わせる際、ここで ifftshift をしてしまうと、
-    % 位相が180度ずれて信号が打ち消し合い、画像が真っ暗になります。
-    % そのため、そのままの画像を使います。
     rho_eff = image_data .* background_phase; 
     
     % --- 2. 空間座標定義 (0 ～ 1) ---
