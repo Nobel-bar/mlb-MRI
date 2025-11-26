@@ -40,12 +40,20 @@ phase_filename = '1st_2DGE_0deg_phase.raw';
 
 
 % pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
-pix_start_row = 1122; % k空間ROIの何行目から置き換えるか (1-based)
+pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
 % width = 112; % 置き換える行数
 width = 224 - pix_start_row; % 置き換える行数
 
+
+% --- パラメータ ---
+params = struct();
+params.original_matrix_size = [512, 512, 23];
+extention = 2.0/1.3;
+theta = -18.6;
+rotation_axis = [0 0 1];
+
 % 保存
-filename_base = sprintf('Artifact_th%_start_%.2f', theta, pix_start_row);
+filename_base = sprintf('Artifact_th%.1f_start_%d', theta, pix_start_row);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_base_path = fullfile(image_file_0, image_file_1);
@@ -54,12 +62,6 @@ save_path = fullfile(image_file_0, image_file_4);
 
 if ~exist(save_path, 'dir'), mkdir(save_path); end
 
-% --- パラメータ ---
-params = struct();
-params.original_matrix_size = [512, 512, 23];
-extention = 2.0/1.3;
-theta = -18.6;
-rotation_axis = [0 0 1];
 
 % --- ハイブリッド化パラメータ (スケーリング) ---
 cutted_matrix_x = round(224 / DS_FACTOR);
