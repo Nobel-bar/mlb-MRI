@@ -40,7 +40,7 @@ phase_filename = '1st_2DGE_0deg_phase.raw';
 
 
 % pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
-pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
+pix_start_row = 120; % k空間ROIの何行目から置き換えるか (1-based)
 % width = 112; % 置き換える行数
 width = 224 - pix_start_row; % 置き換える行数
 

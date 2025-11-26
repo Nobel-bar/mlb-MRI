@@ -41,7 +41,7 @@ phase_filename = '1st_2DGE_0deg_phase.raw';
 
 % pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
 pix_start_row = 112; % k空間ROIの何行目から置き換えるか (1-based)
-pix_start_col = 176; % Y列目 (X行目に関しては、この列以降を入れ替える)
+pix_start_col = 30; % Y列目 (X行目に関しては、この列以降を入れ替える)
 % width = 112; % 置き換える行数
 width = 224 - pix_start_row; % 置き換える行数
 
@@ -53,7 +53,8 @@ extention = 2.0/1.3;
 theta = -18.6;
 rotation_axis = [0 0 1];
 
-% 保存filename_base = sprintf('Artifact_th%.1f_StepShape_R%d_C%d', theta, pix_start_row, pix_start_col);
+% 保存
+filename_base = sprintf('Artifact_th%.1f_StepShape_R%d_C%d', theta, pix_start_row, pix_start_col);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_base_path = fullfile(image_file_0, image_file_1);
