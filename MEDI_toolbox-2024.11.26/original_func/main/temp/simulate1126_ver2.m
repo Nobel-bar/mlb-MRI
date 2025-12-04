@@ -31,7 +31,7 @@ image_file_1 = '1_data';
 image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; % スペース修正
 image_file_4 = '4_rolate_output_data'; % スペース修正
-image_file_5 = '5_fitting_output_data'; % スペース修正
+image_file_5 = '5_fitting_output_data'; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_file_0 = image_file_2DGE_0deg_H;
