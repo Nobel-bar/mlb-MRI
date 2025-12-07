@@ -8,7 +8,7 @@ clear variables;
 close all;
 
 % ★★★ 計算負荷設定 ★★★
-DS_FACTOR = 1; 
+DS_FACTOR = 2; 
 fprintf('ダウンサンプリング係数: %d\n', DS_FACTOR);
 
 %% --- 1. パラメータ設定 ---
@@ -16,6 +16,7 @@ fprintf('ダウンサンプリング係数: %d\n', DS_FACTOR);
 %% --- 1. パラメータ設定 (パス等は環境に合わせてください) ---
 image_file_2DGE_0deg_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
 image_file_1 = '1_data';
 image_file_2 = '2_original_data';
@@ -29,6 +30,9 @@ correct_phase_filename = '1st_2DGE_1_2_Rotate_phase.raw';
 
 mag_filename = '1st_2DGE_0deg_mag.raw';
 phase_filename = '1st_2DGE_0deg_phase.raw';
+% image_file_2DGE_0deg_H = image_file_2DGE_Rotate_H;
+% mag_filename = '2DGE_Rotate_H_mag.raw';
+% phase_filename = '2DGE_Rotate_H_phase.raw';
 
 % --- ★変更点: 回転切り替え用パラメータ ---
 alpha = 3;       % 分割数
@@ -37,6 +41,9 @@ gamma = 100;     % 開始列 (pix_start_col に相当)
 
 pix_start_row = 116; % 開始行 (User指定: 116行目から)
 pix_start_col = gamma; 
+
+% --- 設定: 比較対象のスライス番号 ---
+target_slice = 20;
 
 % --- パラメータ ---
 params = struct();
@@ -67,6 +74,15 @@ gamma = round(gamma / DS_FACTOR);
 
 % --- 体動パラメータ ---
 MOTION_PE_ERROR_MAX_RAD = 0; 
+
+fprintf('Input Path:   %s\n', fullfile(load_base_path, mag_filename));
+fprintf('Correct Path: %s\n', fullfile(correct_load_base_path, correct_mag_filename));
+
+if strcmp(fullfile(load_base_path, mag_filename), fullfile(correct_load_base_path, correct_mag_filename))
+    fprintf('【警告】入力ファイルと正解ファイルが全く同じです！\n');
+else
+    fprintf('ファイルパスは異なります。OKです。\n');
+end
 
 %% --- 2. データ読み込み & ダウンサンプリング ---
 fprintf('\n2. データ読み込み中...\n');
@@ -118,7 +134,7 @@ correct_iMag_4D = correct_iMag_4D_orig(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
 correct_iPhase_4D = correct_iPhase_4D_orig(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
 correct_RDF_small = RDF(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
 correct_iFreq_small = iFreq(1:DS_FACTOR:end, 1:DS_FACTOR:end, :);
-clear correct_iMag_4D_orig correct_iPhase_4D_orig correct_RDF correct_iFreq;
+clear correct_iMag_4D_orig correct_iPhase_4D_orig RDF iFreq; % 正しい変数名を指定
 
 params.matrix_size = size(iMag_4D);
 matrix_x = params.matrix_size(1);
@@ -173,8 +189,7 @@ fprintf('\n7. 正解データとの比較画像を生成中...\n');
 % log(abs(k) + 1) を計算することで、0除算を防ぎつつダイナミックレンジを圧縮
 get_log_mag = @(k) log(abs(k) + 1);
 
-% --- 設定: 比較対象のスライス番号 ---
-target_slice = 12;
+
 
 % --- B. 比較用画像の生成 (回転なし, th/3, 2th/3, th) ---
 % シミュレーション空間(拡張領域)での画像を生成し、最終出力サイズ(y_start_final:y_end_final)にクロップします
