@@ -12,35 +12,49 @@ DS_FACTOR = 2;
 fprintf('ダウンサンプリング係数: %d\n', DS_FACTOR);
 
 %% --- 1. パラメータ設定 ---
+
+%% --- 1. パラメータ設定 (パス等は環境に合わせてください) ---
 image_file_2DGE_0deg_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
+image_file_2DGE_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-
 image_file_1 = '1_data';
+image_file_2 = '2_original_data';
 image_file_3 = '3_output_data'; 
 image_file_4 = '4_rolate_output_data'; 
+image_file_5 = '5_fitting_output_data'; 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 correct_mag_filename = '1st_2DGE_1_2_Rotate_mag.raw';
 correct_phase_filename = '1st_2DGE_1_2_Rotate_phase.raw';
 
 mag_filename = '1st_2DGE_0deg_mag.raw';
 phase_filename = '1st_2DGE_0deg_phase.raw';
+% image_file_2DGE_0deg_H = image_file_2DGE_Rotate_H;
+% mag_filename = '2DGE_Rotate_H_mag.raw';
+% phase_filename = '2DGE_Rotate_H_phase.raw';
+
+% --- ★変更点: 回転切り替え用パラメータ ---
+alpha = 3;       % 分割数
+beta  = 352;     % 全列数 (cutted_matrix_y に相当)
+gamma = 100;     % 開始列 (pix_start_col に相当)
+
+pix_start_row = 116; % 開始行 (User指定: 116行目から)
+pix_start_col = gamma; 
+
+% --- 設定: 比較対象のスライス番号 ---
+target_slice = 20;
 
 % --- パラメータ ---
-alpha = 3;       % 分割数
-beta  = 352;     % 全列数
-gamma = 100;     % 開始列
-pix_start_row = 116; 
-pix_start_col = gamma; 
-target_slice = 20; % 比較対象スライス
-
 params = struct();
 params.original_matrix_size = [512, 512, 23];
 extention = 2.0/1.3;
 theta = -18.6;
 rotation_axis = [0 0 1];
 
+% 保存
 filename_base = sprintf('Artifact_th%.1f_StepShape_Alpha%d_Beta%d_Gamma%d', theta, alpha, beta, gamma);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更点%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_base_path = fullfile(image_file_2DGE_0deg_H, image_file_1);
 load_mask_path = fullfile(image_file_2DGE_0deg_H, image_file_3);
