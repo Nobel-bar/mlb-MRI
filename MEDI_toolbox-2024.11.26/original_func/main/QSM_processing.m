@@ -23,14 +23,14 @@ image_file_4 = '4_rolate_output_data';
 image_file_5 = '5_fitting_output_data'; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-image_file_temp = "F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H"; % !! 要変更 !!
+image_file_temp = "C:\Users\hamaguchi\Downloads\matlab\2DGE_30sec_Rotate_H"; % !! 要変更 !!
 image_file_0 = image_file_temp;
 % 読み込みパスと保存パスを定義
 load_base_path = fullfile(image_file_0, image_file_1);
 %% --- 2. rawファイルのパスを指定 ---
 % ご自身のファイルが保存されている実際のパスに書き換えてください。
-mag_filepath =fullfile(load_base_path, '2DGE_Rotate_H_mag.raw');
-phase_filepath =fullfile(load_base_path, '2DGE_Rotate_H_phase.raw');
+mag_filepath =fullfile(load_base_path, '2DGE_30sec_Rotate_H_mag.raw');
+phase_filepath =fullfile(load_base_path, '2DGE_30sec_Rotate_H_phase.raw');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

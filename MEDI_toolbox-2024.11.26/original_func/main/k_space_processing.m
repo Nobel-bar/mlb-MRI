@@ -14,7 +14,6 @@ image_file_0 = image_file_00;
 % 入力ファイル名 (拡張子なし) % --- サイズに関するパラメータ ---2D用
 input_Re_name = 'Real_0ch__1_1_1_1_1_0_0_1_23_1_1_1';
 input_Im_name = 'Imgn_0ch__1_1_1_1_1_0_0_1_23_1_1_1';
-filename_base = sprintf('1st_2DGE_0deg_15');  % 保存するファイル名
 orig_matrix_x = 512; % 元データのマトリクスサイズ
 orig_matrix_y = 768;
 cutted_matrix_x = 224; % 実際に収集されたk空間の有効データサイズ
@@ -23,8 +22,10 @@ extention = 2.0/1.3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % -入力ファイル名-- サイズに関するパラメータ image_file_2DGE_1_2_Rotate_H---
 image_file_temp = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_Rotate_H'; % !! 要変更 !!% temp
-image_file_0 = image_file_temp; % slab用 
-filename_base = sprintf('2DGE_Rotate_H');  % 保存するファイル名
+
+image_file_2DGE_30sec_Rotate_H = "C:\Users\hamaguchi\Downloads\matlab\2DGE_30sec_Rotate_H";
+image_file_0 = image_file_2DGE_30sec_Rotate_H; % 
+filename_base = sprintf('2DGE_30sec_Rotate_H');  % 保存するファイル名
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
