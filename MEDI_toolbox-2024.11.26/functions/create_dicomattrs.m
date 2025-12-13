@@ -42,7 +42,8 @@ if create_flag
                 warning('Removing old version');
                 delete(targf);
             end
-            copyfile(fullf,targf,'file')
+            copyfile(fullf,targf)
+
         end
     end
     VersionGen=getVersionGen();
