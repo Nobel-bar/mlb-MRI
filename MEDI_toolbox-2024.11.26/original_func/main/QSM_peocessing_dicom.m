@@ -1,7 +1,6 @@
 %================================================================================================
 % QSM解析実行スクリプト (Read_Raw_Data.m 使用例)
 %================================================================================================
-clear all;
 clear variables;
 
 %% --- 1. 撮像パラメータを手動で設定 ---
@@ -11,49 +10,42 @@ clear variables;
 fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
-image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
-
-image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
-image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_000 = "C:\Users\hamaguchi\Downloads\matlab\2DGE_0deg_H'";
-image_file_1 = '1_data';
-image_file_2 = '2_original_data';
-image_file_3 = '3_output_data'; 
+image_file_dual_echo = 'F:\hamaguchi\20251215\dual_echo\24'; % !! 要変更 !!
+image_file_1 = '1_original_data';
+image_file_2 = '2_data';
+image_file_3 = '3_qsm_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
-
-image_file_temp = 'F:\hamaguchi\20251204\3D_RSSG';  % <--- ' ' に変更
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-image_file_temp = 'F:\hamaguchi\20251204\2DGE';  % <--- ' ' に変更
-image_file_0 = image_file_temp;
+image_file_0 = image_file_dual_echo;
 % 読み込みパスと保存パスを定義
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 save_path = fullfile(image_file_0, image_file_3);
 
-if ~exist(save_path, 'dir')
-    mkdir(save_path);
-    fprintf('保存フォルダを作成しました: %s\n', save_path);
-end
+% if ~exist(save_path, 'dir')
+%     mkdir(save_path);
+%     fprintf('保存フォルダを作成しました: %s\n', save_path);
+% end
 
-% params構造体の初期化
-params = struct();
-
-% ボクセルサイズ [x, y, z] (mm)
-params.voxel_size = [2.0, 2.0, 2.0];
-
-% 行列サイズ [x, y, z] - ご指摘に基づき修正
-params.matrix_size = [128, 128, 112];
-
-% 中心周波数 (Hz) (例: 3Tスキャナの場合 123.2 MHz)
-params.CF = 63.8 * 1e6;
-
-% 各エコー時間 (秒単位！) - ご指摘に基づき単一エコーに修正
-params.TE = [0.0046, 0.0091];
-
-% 静磁場の方向 [x, y, z] (通常は [0, 0, 1] または [0, 0, -1] です)
-params.B0_dir = [0, 0, 1];
+% % params構造体の初期化
+% params = struct();
+% 
+% % ボクセルサイズ [x, y, z] (mm)
+% params.voxel_size = [2.0, 2.0, 2.0];
+% 
+% % 行列サイズ [x, y, z] - ご指摘に基づき修正
+% params.matrix_size = [128, 128, 112];
+% 
+% % 中心周波数 (Hz) (例: 3Tスキャナの場合 123.2 MHz)
+% params.CF = 63.8 * 1e6;
+% 
+% % 各エコー時間 (秒単位！) - ご指摘に基づき単一エコーに修正
+% params.TE = [0.0046, 0.0091];
+% 
+% % 静磁場の方向 [x, y, z] (通常は [0, 0, 1] または [0, 0, -1] です)
+% params.B0_dir = [0, 0, 1];
 
 
 
@@ -61,9 +53,9 @@ params.B0_dir = [0, 0, 1];
 %% --- 3. 新しい関数でデータを読み込む ---
 % Read_Raw_Data関数からすべての出力変数を受け取ります。
 
-% [iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_2));
+% [iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_1));
 % FUJIFILMのデータをHitachiとして読み込むように指定
-[iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_2), 'manufacturer', 'Hitachi Medical Corporation');
+[iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_1), 'manufacturer', 'Hitachi Medical Corporation');
 %% --- 4. 以降の処理は変更不要 ---
 % この後のFit_ppm_complex, BET, unwrapPhase, PDF, MEDI_L1などの呼び出しは
 % そのまま使用できます。
@@ -120,23 +112,23 @@ save(fullfile(save_path, 'PDF.mat'), 'RDF');
 % これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
 % 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
 % MEDI+0（CSFを基準とする手法）を使用する例です。
-
+% 
 % --- Mask_CSF を使わない設定に変更して実行 ---
 % 'lambda_CSF' オプションを削除しました
-
+% 
 % CSFマスクの生成（R2*マップを利用）
-% R2s = arlo(TE, abs(iField));
-% Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
-% 
-% save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-% 
-% path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
-% save(fullfile(path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+R2s = arlo(TE, abs(iField));
+Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
 
+save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+
+path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
+save(fullfile(path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+    
 % MEDI_L1関数を呼び出し
-% QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
-
-QSM = MEDI_L1('lambda', 1000, 'merit');
+QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
+% 
+% QSM = MEDI_L1('lambda', 1000, 'merit');
 
 fprintf('スクリプトのこの部分までの処理が完了しました。\n');
 
