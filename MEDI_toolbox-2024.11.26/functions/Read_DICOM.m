@@ -344,10 +344,15 @@ switch lower(manufacturer)
         
         disp('UNITEDIMAGING READ');
         
-    case 'hitachi medical corporation'
+%     case 'hitachi medical corporation'
+%         [iField,voxel_size,matrix_size,CF,delta_TE,TE,B0_dir,files]=Read_Hitachi_DICOM(DicomFolder);
+%         
+%         disp('HITACHI READ');
+       % HitachiとFujifilmを同じ処理にまとめる
+    case {'hitachi medical corporation', 'fujifilm corporation', 'fujifilm'}
         [iField,voxel_size,matrix_size,CF,delta_TE,TE,B0_dir,files]=Read_Hitachi_DICOM(DicomFolder);
         
-        disp('HITACHI READ');
+        disp('HITACHI/FUJIFILM READ');
     otherwise
         disp(['Unknown manufacturer:' manufacturer '. Please set using manufacturer option'])
         disp('LOADING FAILED');
