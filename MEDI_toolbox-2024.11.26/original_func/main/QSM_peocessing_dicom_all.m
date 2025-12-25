@@ -4,11 +4,11 @@
 clear variables; close all; clc;
 
 % --- 共通設定 (ループ外で定義) ---
-base_dir = 'F:\hamaguchi\20251215\dual_echo'; % データの親フォルダ
+base_dir = 'F:\hamaguchi\20251215\single_echo'; % データの親フォルダ
 toolbox_func_path = "F:\hamaguchi\MEDI_toolbox-2024.11.26\functions"; % MEDI関数のパス(変数名pathは予約語のため変更)
 
 % 処理するフォルダ番号の範囲
-target_ids = 33:33;
+target_ids = 1:20;
 
 fprintf('バッチ処理を開始します。対象: %d フォルダ\n', length(target_ids));
 

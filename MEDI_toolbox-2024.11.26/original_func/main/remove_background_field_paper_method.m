@@ -5,20 +5,29 @@ clear; clc; close all;
 %% 1. 設定：解析パラメータ & ファイルパス
 % -------------------------------------------------------------------------
 % 前回の解析で特定した値を入力してください
-SENSITIVITY = 1.1137e-04;  % 感度 (Hz/DAC)
-PATTERN_IDX = 2;           % 2 = 'Swap XY' (最適パターン)
+SENSITIVITY = 1.1137e-04;  % 感度 (Hz/DAC)
+PATTERN_IDX = 2;           % 2 = 'Swap XY' (最適パターン)
 
 % --- 人体データ (Human / Subject) ---
-path_hum_mag   = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\Mask.mat';
+path_hum_mag   = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\Mask.mat';
 path_hum_phase = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\phase.mat';
-dicom_hum      = 'F:\hamaguchi\20251215\dual_echo\27\1_original_data';
+dicom_hum      = 'F:\hamaguchi\20251215\dual_echo\27\1_original_data';
 
 % --- ファントムデータ (Phantom / Reference) ---
 % ※シムOFFのデータ、あるいは基準となるファントムデータ
-path_pha_mag   = 'F:\hamaguchi\20251215\dual_echo\27Z\3_qsm_data\Mask.mat';
-path_pha_phase = 'F:\hamaguchi\20251215\dual_echo\27Z\3_qsm_data\phase.mat';
-dicom_pha      = 'F:\hamaguchi\20251215\dual_echo\27Z\1_original_data';
+path_pha_mag   = 'F:\hamaguchi\20251215\dual_echo\25\3_qsm_data\Mask.mat';
+path_pha_phase = 'F:\hamaguchi\20251215\dual_echo\25\3_qsm_data\phase.mat';
+dicom_pha      = 'F:\hamaguchi\20251215\dual_echo\25\1_original_data';
 % -------------------------------------------------------------------------
+
+save_folder = "F:\hamaguchi\20251215\dual_echo\background";
+
+if ~exist(save_folder, 'dir')
+    mkdir(save_folder);
+    fprintf('フォルダを作成しました: %s\n', fullfile(pwd, save_folder));
+else
+    fprintf('既存のフォルダを使用します: %s\n', fullfile(pwd, save_folder));
+end
 
 %% 2. データの読み込み
 fprintf('データを読み込んでいます...\n');
@@ -27,9 +36,9 @@ fprintf('データを読み込んでいます...\n');
 
 % 3Dデータ処理 (中央スライス抽出)
 if ndims(img_mag_hum) == 3
-    sl = round(size(img_mag_hum, 3) / 2);
-    img_mag_hum = img_mag_hum(:,:,sl); img_freq_hum = img_freq_hum(:,:,sl);
-    img_mag_pha = img_mag_pha(:,:,sl); img_freq_pha = img_freq_pha(:,:,sl);
+    sl = round(size(img_mag_hum, 3) / 2);
+    img_mag_hum = img_mag_hum(:,:,sl); img_freq_hum = img_freq_hum(:,:,sl);
+    img_mag_pha = img_mag_pha(:,:,sl); img_freq_pha = img_freq_pha(:,:,sl);
 end
 
 % マスク作成
@@ -43,14 +52,14 @@ mean_hum = mean(img_freq_hum(mask_hum));
 mean_pha = mean(img_freq_pha(mask_pha));
 
 TF_hum = img_freq_hum - mean_hum; % Total Field (Human)
-B_pha  = img_freq_pha - mean_pha; % Phantom Base Field
+B_pha  = img_freq_pha - mean_pha; % Phantom Base Field
 
 %% 4. Phantom Polynomial Fitting (3次多項式)
 % ファントムの磁場を3次関数で近似し、滑らかな「マグネット磁場」を推定します
 fprintf('ファントムデータを3次多項式でフィッティング中...\n');
 
 [ny, nx] = size(B_pha);
-dx = 1; dy = 1; 
+dx = 1; dy = 1; 
 R0 = max(nx, ny) / 2;
 x_vec = ((1:nx) - nx/2) / R0;
 y_vec = ((1:ny) - ny/2) / R0;
@@ -58,8 +67,8 @@ y_vec = ((1:ny) - ny/2) / R0;
 
 % 座標変換 (Human解析時と同じパターンを適用)
 switch PATTERN_IDX
-    case 2, X=yy; Y=xx; % Swap XY
-    otherwise, X=xx; Y=yy; % Default
+    case 2, X=yy; Y=xx; % Swap XY
+    otherwise, X=xx; Y=yy; % Default
 end
 
 % フィッティング用基底関数 (3次まで: 1, x, y, x2, xy, y2, x3, x2y, xy2, y3)
@@ -68,18 +77,18 @@ x_p = X(idx_pha); y_p = Y(idx_pha);
 b_p = B_pha(idx_pha);
 
 A_poly = [ones(size(x_p)), ...
-          x_p, y_p, ...
-          x_p.^2, x_p.*y_p, y_p.^2, ...
-          x_p.^3, x_p.^2.*y_p, x_p.*y_p.^2, y_p.^3];
+          x_p, y_p, ...
+          x_p.^2, x_p.*y_p, y_p.^2, ...
+          x_p.^3, x_p.^2.*y_p, x_p.*y_p.^2, y_p.^3];
 
 coeffs_poly = A_poly \ b_p;
 
 % 全画面分の3次曲面を生成 (B_magnet_fitted)
 A_full = [ones(numel(X),1), ...
-          X(:), Y(:), ...
-          X(:).^2, X(:).*Y(:), Y(:).^2, ...
-          X(:).^3, X(:).^2.*Y(:), X(:).*Y(:).^2, Y(:).^3];
-      
+          X(:), Y(:), ...
+          X(:).^2, X(:).*Y(:), Y(:).^2, ...
+          X(:).^3, X(:).^2.*Y(:), X(:).*Y(:).^2, Y(:).^3];
+      
 B_magnet_fitted = reshape(A_full * coeffs_poly, ny, nx);
 
 %% 5. Delta Shim Calculation (シム差分の計算)
@@ -92,17 +101,17 @@ fprintf('シム差分を計算中...\n');
 dShim = struct();
 tags = {'X','Y','Z','XY','XZ','YZ','X2Y2','Z2'};
 for i = 1:length(tags)
-    t = tags{i};
-    v_h=0; if isfield(shim_hum,t), v_h=shim_hum.(t); end
-    v_p=0; if isfield(shim_pha,t), v_p=shim_pha.(t); end
-    dShim.(t) = v_h - v_p; % Human - Phantom
+    t = tags{i};
+    v_h=0; if isfield(shim_hum,t), v_h=shim_hum.(t); end
+    v_p=0; if isfield(shim_pha,t), v_p=shim_pha.(t); end
+    dShim.(t) = v_h - v_p; % Human - Phantom
 end
 
 % シム磁場マップの生成 (感度 SENSITIVITY を使用)
-scale = SENSITIVITY; 
+scale = SENSITIVITY; 
 % ※注: 3次フィッティングの座標系(X,Y)と合わせるため、同じメッシュを使用
 % Z項は2Dスライスでは定数または1次勾配として振る舞うため、簡易的に扱います
-z_0 = 0; 
+z_0 = 0; 
 
 % 基底関数 (シムコイル用)
 term_X = X; term_Y = Y; term_Z = z_0;
@@ -110,9 +119,9 @@ term_XY = X.*Y; term_XZ = X.*z_0; term_YZ = Y.*z_0;
 term_X2Y2 = X.^2 - Y.^2; term_Z2 = z_0^2 - 0.5*(X.^2+Y.^2);
 
 B_delta_shim = scale * (...
-    dShim.X*term_X + dShim.Y*term_Y + dShim.Z*term_Z + ...
-    dShim.XY*term_XY + dShim.XZ*term_XZ + dShim.YZ*term_YZ + ...
-    dShim.X2Y2*term_X2Y2 + dShim.Z2*term_Z2);
+    dShim.X*term_X + dShim.Y*term_Y + dShim.Z*term_Z + ...
+    dShim.XY*term_XY + dShim.XZ*term_XZ + dShim.YZ*term_YZ + ...
+    dShim.X2Y2*term_X2Y2 + dShim.Z2*term_Z2);
 
 %% 6. Calculate EF & SF (分離計算)
 % EF (Equipment Field) = Phantom_Fit + Delta_Shim
@@ -169,40 +178,55 @@ surf(mX, mY, SF, 'EdgeColor','none','FaceAlpha',1.0);
 title('Subject Field (SF)'); view(-30, 60); axis tight off;
 colormap(gca, 'jet'); camlight; lighting gouraud;
 % SFは微細構造なのでZレンジを狭める
-zlim(c_sf); 
+zlim(c_sf); 
 
 rotate3d on;
 
+%% データをJSON形式で保存 (Python/Web連携用)
+
+% 構造体にまとめる
+dataStruct = struct();
+dataStruct.B_magnet_fitted = B_magnet_fitted;
+dataStruct.SENSITIVITY = SENSITIVITY;
+dataStruct.PATTERN_IDX = PATTERN_IDX;
+dataStruct.Note = 'Exported from MATLAB';
+
+% JSON文字列に変換して保存
+jsonStr = jsonencode(dataStruct);
+savePath = fullfile(save_folder, 'analysis_result.json');
+fid = fopen(savePath, 'w');
+fwrite(fid, jsonStr, 'char');
+fclose(fid);
+fprintf('保存完了: analysis_result.json\n');
+
 %% 関数群
 function [shimStruct, dicomInfo] = get_dicom_info(targetPath)
-    shimStruct = struct(); dicomInfo = [];
-    if ~isfolder(targetPath), error(['No folder: ' targetPath]); end
-    files = dir(fullfile(targetPath, '*'));
-    for i = 1:length(files)
-        fname = files(i).name;
-        if startsWith(fname,'.') || files(i).isdir, continue; end
-        try
-            info = dicominfo(fullfile(files(i).folder, fname));
-            if isfield(info, 'Private_0029_1022')
-                raw = info.Private_0029_1022;
-                if isa(raw,'uint8')||isa(raw,'int8'), raw=char(raw'); else, raw=string(raw); end
-                pts = strsplit(raw, ',');
-                for k=1:length(pts)
-                    it=strtrim(pts{k});
-                    if contains(it,'='), kv=strsplit(it,'='); 
-                        v=str2double(kv{2}); if ~isnan(v), shimStruct.(strtrim(kv{1}))=v; end
-                    end
-                end
-                dicomInfo = info; break;
-            end
-        catch, continue; end
-    end
+    shimStruct = struct(); dicomInfo = [];
+    if ~isfolder(targetPath), error(['No folder: ' targetPath]); end
+    files = dir(fullfile(targetPath, '*'));
+    for i = 1:length(files)
+        fname = files(i).name;
+        if startsWith(fname,'.') || files(i).isdir, continue; end
+        try
+            info = dicominfo(fullfile(files(i).folder, fname));
+            if isfield(info, 'Private_0029_1022')
+                raw = info.Private_0029_1022;
+                if isa(raw,'uint8')||isa(raw,'int8'), raw=char(raw'); else, raw=string(raw); end
+                pts = strsplit(raw, ',');
+                for k=1:length(pts)
+                    it=strtrim(pts{k});
+                    if contains(it,'='), kv=strsplit(it,'='); 
+                        v=str2double(kv{2}); if ~isnan(v), shimStruct.(strtrim(kv{1}))=v; end
+                    end
+                end
+                dicomInfo = info; break;
+            end
+        catch, continue; 
+        end
+    end
 end
-
 function [m, f] = load_mat_data(fm, fp)
-    d=load(fm); if isfield(d,'iMag'),m=d.iMag; elseif isfield(d,'Mask'),m=d.Mask; else, m=[]; end
-    d=load(fp); if isfield(d,'iFreq'),f=d.iFreq; elseif isfield(d,'phase'),f=d.phase; else, f=[]; end
-    m=double(m); f=double(f);
+    d=load(fm); if isfield(d,'iMag'),m=d.iMag; elseif isfield(d,'Mask'),m=d.Mask; else, m=[]; end
+    d=load(fp); if isfield(d,'iFreq'),f=d.iFreq; elseif isfield(d,'phase'),f=d.phase; else, f=[]; end
+    m=double(m); f=double(f);
 end
-
-これで行われていることと同じですか
