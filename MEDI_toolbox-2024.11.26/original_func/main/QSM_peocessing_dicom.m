@@ -8,9 +8,8 @@ clear variables;
 
 % --- 1. 初期設定 ---
 fprintf('1. パラメータを設定しています...\n');
-
 % パス設定
-image_file_dual_echo = 'F:\hamaguchi\20251215\dual_echo\27Z'; % !! 要変更 !!
+image_file_dual_echo = 'F:\hamaguchi\data\20251215\dual_echo\27'; % !! 要変更 !!
 image_file_1 = '1_original_data';
 image_file_2 = '2_data';
 image_file_3 = '3_qsm_data'; 
@@ -98,7 +97,7 @@ else
 end
 
 
-save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
+% save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
 
 %% 4. 背景磁場除去
 % 脳組織外に由来する背景磁場を除去し、局所磁場マップ(RDF)を生成します。
@@ -106,40 +105,77 @@ save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
 RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
 
  
-save(fullfile(save_path, 'PDF.mat'), 'RDF');
+% save(fullfile(save_path, 'PDF.mat'), 'RDF');
 
-% %% 5. QSM再構成 (MEDI_L1)
-% % これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
-% % 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
-% % MEDI+0（CSFを基準とする手法）を使用する例です。
-% % 
-% % --- Mask_CSF を使わない設定に変更して実行 ---
-% % 'lambda_CSF' オプションを削除しました
-% % 
-% % CSFマスクの生成（R2*マップを利用）
-% R2s = arlo(TE, abs(iField));
-% Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
+%% 5. QSM再構成 (MEDI_L1)
+% これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
+% 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
+% MEDI+0（CSFを基準とする手法）を使用する例です。
 % 
+% --- Mask_CSF を使わない設定に変更して実行 ---
+% 'lambda_CSF' オプションを削除しました
+% 
+% CSFマスクの生成（R2*マップを利用）
+R2s = arlo(TE, abs(iField));
+Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
+
 % save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-% 
-% path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
-% save(fullfile(path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-%     
-% % MEDI_L1関数を呼び出し
+
+path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
+% save(fullfile(save_path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+    
+%% --- Step 1: MEDI_L1による高精度QSM計算 (Chiマップの取得) ---
+% lambda: 正則化パラメータ（1000が標準）
+% 'merit': 振幅画像のエッジ情報を考慮するオプション（これが高精度の肝です）
+QSM = MEDI_L1('lambda', 1000, 'iFreq', RDF, 'N_std', N_std, ...
+              'Magnitude', iMag, 'Mask', Mask, ...
+              'matrix_size', matrix_size, 'voxel_size', voxel_size, ...
+              'B0_dir', B0_dir, 'merit');
+%% --- QSMサイズ復元処理 ---
+if size(QSM, 3) ~= size(Mask, 3)
+    fprintf('⚠️ MEDIによりスライス数が削減されました (%d -> %d)。サイズを復元します。\n', size(Mask, 3), size(QSM, 3));
+    
+    % 元のサイズ(112)の空の配列を作成
+    QSM_full = zeros(size(Mask));
+    
+    % マスクの範囲から、どのスライスが計算に使われたか特定
+    % 通常、マスクが存在するスライスの範囲が抽出されています
+    mask_indices = find(squeeze(sum(sum(Mask, 1), 2)) > 0);
+    if ~isempty(mask_indices)
+        start_sl = min(mask_indices);
+        end_sl = start_sl + size(QSM, 3) - 1;
+        
+        % 念のため範囲チェック
+        if end_sl <= size(Mask, 3)
+            QSM_full(:,:,start_sl:end_sl) = QSM;
+        else
+            % 中央合わせのフォールバック
+            start_sl = floor((size(Mask,3) - size(QSM,3))/2) + 1;
+            QSM_full(:,:,start_sl:start_sl+size(QSM,3)-1) = QSM;
+        end
+    end
+    QSM = QSM_full; % 112スライスに戻したQSMで上書き
+end
+% MEDI_L1関数を呼び出し
 % QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
-% % 
-% % QSM = MEDI_L1('lambda', 1000, 'merit');
 % 
-% fprintf('スクリプトのこの部分までの処理が完了しました。\n');
-% 
+% QSM = MEDI_L1('lambda', 1000, 'merit');
+
+fprintf('スクリプトのこの部分までの処理が完了しました。\n');
+
 % save(fullfile(save_path, 'QSM.mat'), 'QSM');
-% % export QSM variable as dicom files in the 'QSM' directory
+% export QSM variable as dicom files in the 'QSM' directory
 % Write_DICOM(QSM, files, 'QSM')
-% 
-% % Initialization for Source Separation
-% [chi_p_init,chi_n_init,R2p,alpha,beta] = MEDI_L1ss_init(Mask,CF,R2s,QSM,delta_TE);
+
+% Initialization for Source Separation
+[chi_p_init,chi_n_init,R2p,alpha,beta] = MEDI_L1ss_init(Mask,CF,R2s,QSM,delta_TE);
 % save RDFss.mat iFreq RDF N_std iMag Mask matrix_size voxel_size delta_TE CF B0_dir alpha beta R2p Mask_CSF chi_p_init chi_n_init
-% 
-% % Source Separation        
+%% --- Step 3: フォワードシミュレーション用のカーネル取得 ---
+% Pythonで自作していたカーネルの代わりに、Toolbox標準のものを使用
+D = dipole_kernel(matrix_size, voxel_size, B0_dir);
+% Source Separation        
 % X = MEDI_L1ss('lambda',1000, 'smv',5, 'filename', 'RDFss.mat','lambda_CSF',10);
 % save SourceSep.mat X
+
+% 保存（後で比較に使用するため）
+save(fullfile(save_path, 'Reproduction_Inputs.mat'), 'RDF', 'QSM', 'D', 'Mask', 'voxel_size');

@@ -10,8 +10,8 @@ path_mat_ON_Phase = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\phase.mat';
 
 % Shim OFF データ
 dicomFolder_OFF    = 'F:\hamaguchi\20251215\dual_echo\27Z\1_original_data';
-path_mat_OFF_Mag   = 'F:\hamaguchi\20251215\dual_echo\27Z\3_qsm_data\Mask.mat';
-path_mat_OFF_Phase = 'F:\hamaguchi\20251215\dual_echo\27Z\3_qsm_data\phase.mat';
+path_mat_OFF_Mag   = "no_shim_phantom_mag":
+path_mat_OFF_Phase = "no_shim_phantom_mag":
 % -------------------------------------------------------------------------
 
 %% 2. データ読み込み & 前処理

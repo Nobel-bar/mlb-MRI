@@ -10,7 +10,7 @@ clear variables;
 fprintf('1. パラメータを設定しています...\n');
 
 % パス設定
-image_file_dual_echo = 'F:\hamaguchi\20251215\dual_echo\27Z'; % !! 要変更 !!
+image_file_dual_echo = 'F:\hamaguchi\data\20251215\dual_echo\27Z'; % !! 要変更 !!
 
 image_file_1 = '1_original_data';
 image_file_2 = '2_data';
@@ -24,11 +24,11 @@ image_file_0 = image_file_dual_echo;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 save_path = fullfile(image_file_0, image_file_3);
-save_path   = "F:\hamaguchi\20251204\2DSE\3_output_data";
+% save_path   = "F:\hamaguchi\20251204\2DSE\3_output_data";
 %% 1. 設定（ここだけ書き換えてください）
 % DICOMが入っているフォルダのパス
 image_file_dir = fullfile(image_file_0, image_file_1); 
-image_file_dir = 'F:\hamaguchi\20251204\2DSE\2_original_data';
+% image_file_dir = 'F:\hamaguchi\20251204\2DSE\2_original_data';
 %% 2. データの読み込み
 fprintf('データを読み込んでいます...\n');
 % メーカー指定オプションを入れて読み込みます
