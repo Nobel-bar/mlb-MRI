@@ -1,159 +1,184 @@
-clear variables;
+%% --- QSM解析 最終完成版 (All Fixes Integrated) ---
+clear variables; close all; clc;
 
-%% --- 1. 撮像パラメータを手動で設定 ---
-% このセクションをご自身のデータに合わせて正確に設定してください。
-
-% --- 1. 初期設定 ---
+% =========================================================================
+% 1. 初期設定 (ユーザー環境に合わせてパスを変更してください)
+% =========================================================================
 fprintf('1. パラメータを設定しています...\n');
-% パス設定
-image_file_dual_echo = 'F:\hamaguchi\data\20251215\dual_echo\27'; % !! 要変更 !!
+
+% データフォルダのパス (Fドライブの方を有効にしています)
+base_dir = 'C:\Users\yasun\Documents\b0_mapping_project\data\20251215\dual_echo'; % !! 要変更 !!
+target_id = '27'; % 解析対象のフォルダ名
+
+image_file_dual_echo = fullfile(base_dir, target_id);
 image_file_1 = '1_original_data';
-image_file_2 = '2_data';
 image_file_3 = '3_qsm_data'; 
-image_file_4 = '4_rolate_output_data'; 
-image_file_5 = '5_fitting_output_data'; 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-image_file_0 = image_file_dual_echo;
-% 読み込みパスと保存パスを定義
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-save_path = fullfile(image_file_0, image_file_3);
+% 保存先設定
+save_path = fullfile(image_file_dual_echo, image_file_3);
 
-% if ~exist(save_path, 'dir')
-%     mkdir(save_path);
-%     fprintf('保存フォルダを作成しました: %s\n', save_path);
-% end
+% =========================================================================
+% 2. データ読み込み
+% =========================================================================
+input_dicom_path = fullfile(image_file_dual_echo, image_file_1);
+fprintf('DICOM読み込み中: %s\n', input_dicom_path);
 
-% % params構造体の初期化
-% params = struct();
-% 
-% % ボクセルサイズ [x, y, z] (mm)
-% params.voxel_size = [2.0, 2.0, 2.0];
-% 
-% % 行列サイズ [x, y, z] - ご指摘に基づき修正
-% params.matrix_size = [128, 128, 112];
-% 
-% % 中心周波数 (Hz) (例: 3Tスキャナの場合 123.2 MHz)
-% params.CF = 63.8 * 1e6;
-% 
-% % 各エコー時間 (秒単位！) - ご指摘に基づき単一エコーに修正
-% params.TE = [0.0046, 0.0091];
-% 
-% % 静磁場の方向 [x, y, z] (通常は [0, 0, 1] または [0, 0, -1] です)
-% params.B0_dir = [0, 0, 1];
+% FUJIFILM/Hitachi対応
+[iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(input_dicom_path, 'manufacturer', 'Hitachi Medical Corporation');
 
-
-
-
-%% --- 3. 新しい関数でデータを読み込む ---
-% Read_Raw_Data関数からすべての出力変数を受け取ります。
-
-% [iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_1));
-% FUJIFILMのデータをHitachiとして読み込むように指定
-[iField, voxel_size, matrix_size, CF, delta_TE, TE, B0_dir, files] = Read_DICOM(fullfile(image_file_0, image_file_1), 'manufacturer', 'Hitachi Medical Corporation');
-%% --- 4. 以降の処理は変更不要 ---
-% この後のFit_ppm_complex, BET, unwrapPhase, PDF, MEDI_L1などの呼び出しは
-% そのまま使用できます。
-fprintf('データの読み込みが完了しました。磁化率マップの計算を開始します...\n');
-
-%... (以降のMEDIツールボックスの解析処理を続ける)
-
-
-
-%% . 脳マスクの生成
-% 振幅画像から脳領域を抽出するマスクを作成します。
-% FSLのBETツール（要インストール）を使用するのが一般的です。
-iMag = sqrt(sum(abs(iField).^2, 4)); % 全エコーの振幅を合成
-Mask = BET(iMag, matrix_size, voxel_size); 
-% --- 【修正】B0方向の強制固定 (エラー回避のため) ---
-% ほとんどのMRI撮像では主磁場はZ方向([0 0 1])です
-fprintf('B0方向を [0 0 1] に固定します (元: [%.2f %.2f %.2f])\n', B0_dir(1), B0_dir(2), B0_dir(3));
+% 【修正1】B0方向を強制的にZ方向[0 0 1]に固定 (計算安定化のため)
 B0_dir = [0; 0; 1];
+fprintf('B0方向を固定しました: [0 0 1]\n');
 
-% 3. 手動位相差計算 & アンラッピング
-fprintf('位相マップ計算 & アンラッピング...\n');
+% =========================================================================
+% 3. マスク生成 (BETの代わりに堅牢な手法を使用)
+% =========================================================================
+fprintf('脳マスク生成中 (Thresholding + Erosion)...\n');
+iMag = sqrt(sum(abs(iField).^2, 4));
+
+% 閾値処理 (最大輝度の10%以上を脳とする)
+threshold_ratio = 0.10; 
+Mask_raw = iMag > (max(iMag(:)) * threshold_ratio);
+
+% 穴埋め処理
+for i = 1:size(Mask_raw, 3)
+    Mask_raw(:,:,i) = imfill(Mask_raw(:,:,i), 'holes'); 
+end
+
+% 【修正2】マスクの縮小 (脳表面の強い磁場乱れを除外するため数ピクセル削る)
+se = strel('sphere', 3); % 3ピクセル分削る
+Mask = imerode(Mask_raw, se); 
+
+% =========================================================================
+% 4. 位相計算とアンラッピング (手動計算で縞模様を回避)
+% =========================================================================
+fprintf('位相計算 & アンラッピング中...\n');
+
+% 【修正3】手動位相差計算 (Fit_ppm_complexを使わない)
 ComplexDiff = iField(:,:,:,2) .* conj(iField(:,:,:,1));
 PhaseDiff = angle(ComplexDiff);
+
+% アンラッピング
 UnwrappedPhase = unwrapPhase(iMag, PhaseDiff, matrix_size);
 
-% 4. 単位変換 (ppm)
-CF_MHz = CF / 1e6;
-iFreq_ppm = UnwrappedPhase / (2 * pi * delta_TE * CF_MHz);
+% 一度 ppm 単位に変換 (背景磁場除去のため)
+iFreq_ppm = UnwrappedPhase / (2 * pi * delta_TE * CF/1e6);
+iFreq_ppm(isnan(iFreq_ppm)) = 0;
 
-% --- 【修正】データの洗浄 (NaN除去) ---
-if any(isnan(iFreq_ppm(:)))
-    fprintf('警告: 位相マップにNaNが含まれています。0に置換します。\n');
-    iFreq_ppm(isnan(iFreq_ppm)) = 0;
+% =========================================================================
+% 5. 背景磁場除去 (PDFの代わりにSMVを使用)
+% =========================================================================
+fprintf('背景磁場除去 (SMVフィルタ) 実行中...\n');
+
+% 【修正4】SMVフィルタによる背景除去 (エッジのアーチファクトに強い)
+smv_radius = 5; % 半径5mm
+try
+    Background_Field = SMV(iFreq_ppm, matrix_size, voxel_size, smv_radius);
+    RDF_ppm = (iFreq_ppm - Background_Field) .* Mask;
+catch
+    fprintf('警告: SMV関数エラー。Gaussianフィルタで代用します。\n');
+    h = fspecial('gaussian', [21 21], 5);
+    Background_Field = imfilter(iFreq_ppm, h, 'replicate');
+    RDF_ppm = (iFreq_ppm - Background_Field) .* Mask;
 end
 
-% 5. 背景磁場除去 (PDF) - 安定化設定
-fprintf('背景磁場除去 (PDF) 実行中...\n');
+%% --- (前半の処理はそのまま...) ---
 
-% 【修正】ノイズマップを計算せず、一律「1」としてPDFに渡します (計算発散防止)
-N_std_for_PDF = ones(size(iFreq_ppm)); 
-% マスク外の値は計算に悪影響するためゼロクリア
-iFreq_ppm = iFreq_ppm .* Mask;
+% =========================================================================
+% 6. QSM計算 (MEDI_L1) - 修正版
+% =========================================================================
+fprintf('QSM計算準備 (RDF.mat 作成)...\n');
+
+% 1. データをMEDI用に準備 (スケーリング & 変数名定義)
+% MEDIは内部で iFreq または RDF という名前の変数を期待します
+scale_factor = 2 * pi * delta_TE * CF * 1e-6;
+
+iFreq = RDF_ppm * scale_factor;        % スケールアップした入力データ
+RDF   = iFreq;                         % 念のため RDF という名前でも保存
+N_std = (ones(size(iFreq)) * 0.002) * scale_factor; % ノイズマップ
+
+% 2. 必要な変数をすべて RDF.mat に保存
+% これで "File not found" エラーを回避します
+rdf_mat_path = fullfile(save_path, 'RDF.mat');
+save(rdf_mat_path, 'iFreq', 'RDF', 'N_std', 'iMag', 'Mask', ...
+    'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir');
+
+fprintf('RDF.mat を保存しました: %s\n', rdf_mat_path);
+fprintf('MEDI_L1 を実行します...\n');
+
+% 3. カレントディレクトリを一時的に変更して実行
+% (MEDIツールボックスはカレントディレクトリのファイルを優先して読む癖があるため)
+current_dir = pwd;
+cd(save_path); 
 
 try
-    RDF = PDF(iFreq_ppm, N_std_for_PDF, Mask, matrix_size, voxel_size, B0_dir);
+    % 引数を指定せず実行（自動的に RDF.mat を読み込みます）
+    % lambda だけ指定します
+    QSM = MEDI_L1('lambda', 1000); 
+    
+    % もし output が ppm 単位に戻っていなければ戻す（通常は不要だが念のため）
+    % QSM = QSM / scale_factor; 
 catch ME
-    fprintf('PDFエラー: %s\n単純なハイパスフィルタで代用します。\n', ME.message);
-    % PDFがどうしてもダメな場合のバックアップ (SMVフィルタ)
-    RDF = SMV(iFreq_ppm, matrix_size, voxel_size, 5) .* Mask; 
+    cd(current_dir); % エラーが起きても必ず元の場所に戻る
+    error('MEDI実行エラー: %s', ME.message);
 end
 
-% 6. QSM計算 (MEDI_L1)
-fprintf('QSM計算中...\n');
-N_std_fixed = ones(size(RDF)) * 0.002; % QSM用のノイズマップも固定
+cd(current_dir); % 元のディレクトリに戻る
 
-QSM = MEDI_L1('lambda', 1000, ...
-              'iFreq', RDF, ...
-              'N_std', N_std_fixed, ...
-              'Magnitude', iMag, ...
-              'Mask', Mask, ...
-              'matrix_size', matrix_size, ...
-              'voxel_size', voxel_size, ...
-              'B0_dir', B0_dir);
+% =========================================================================
+% 7. サイズ復元と保存
+% =========================================================================
+% マスク生成時の元サイズを取得 (Mask_raw がなければ Mask から推定)
+[nx, ny, nz_orig] = size(Mask); 
+% もしErosion前のMask_rawがメモリに残っていればそれを使う
+if exist('Mask_raw', 'var')
+    [~, ~, nz_orig] = size(Mask_raw);
+end
 
-% 7. サイズ復元
-[nx, ny, nz_orig] = size(Mask);
 if size(QSM, 3) ~= nz_orig
-    QSM_final = zeros(size(Mask));
+    QSM_final = zeros(nx, ny, nz_orig);
+    % マスクがある範囲を特定して埋め込む
     z_indices = find(squeeze(sum(sum(Mask, 1), 2)) > 0);
-    start_z = min(z_indices);
-    end_z = min(start_z + size(QSM,3) - 1, nz_orig);
-    QSM_final(:,:, start_z:end_z) = QSM(:,:, 1:(end_z-start_z+1));
+    if ~isempty(z_indices)
+        start_z = min(z_indices);
+        % サイズが合うように調整
+        write_size = min(size(QSM,3), nz_orig - start_z + 1);
+        QSM_final(:,:, start_z : start_z + write_size - 1) = QSM(:,:, 1:write_size);
+    else
+        QSM_final = QSM; % 復元できない場合はそのまま
+    end
 else
     QSM_final = QSM;
 end
 
+% 結果の保存
+save(fullfile(save_path, 'QSM_Final.mat'), 'QSM_final', 'RDF_ppm', 'Mask');
+fprintf('保存完了: %s\n', fullfile(save_path, 'QSM_Final.mat'));
+
+% =========================================================================
 % 8. 結果表示
-figure('Name', 'Final Result', 'Color', 'w', 'Position', [100, 100, 1200, 600]);
+% =========================================================================
+figure('Name', 'Final QSM Result', 'Color', 'w', 'Position', [100, 100, 1200, 600]);
 sl = round(nz_orig/2);
 
-% RDF
+% Input RDF (ppm)
 subplot(1, 3, 1);
-imagesc(rot90(RDF(:,:,sl), 1));
-axis image off; colormap gray;
-caxis([-0.1, 0.1]); 
-title('Local Field (RDF)');
+imagesc(rot90(RDF_ppm(:,:,sl), 1)); 
+axis image off; colormap gray; caxis([-0.1, 0.1]); 
+title('Input: Local Field (ppm)');
 
-% QSM
+% Output QSM
 subplot(1, 3, 2);
-imagesc(rot90(QSM_final(:,:,sl), 1));
-axis image off; colormap gray;
-caxis([-0.15, 0.15]); 
-title('Output: QSM');
-colorbar;
+imagesc(rot90(QSM_final(:,:,sl), 1)); 
+axis image off; colormap gray; caxis([-0.15, 0.15]); 
+title('Output: QSM (Susceptibility)'); colorbar;
 
-% MinIP
+% MinIP (静脈強調)
 subplot(1, 3, 3);
 slab = max(1, sl-5):min(nz_orig, sl+5);
 mip_img = min(QSM_final(:,:,slab), [], 3);
-imagesc(rot90(mip_img, 1));
-axis image off; colormap gray;
-caxis([-0.2, 0.1]); 
+imagesc(rot90(mip_img, 1)); 
+axis image off; colormap gray; caxis([-0.2, 0.1]); 
 title('MinIP (Veins)');
 
-fprintf('完了しました。すべての画像が正しく表示されているはずです。\n');
+fprintf('全工程が完了しました。\n');

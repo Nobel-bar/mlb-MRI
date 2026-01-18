@@ -6,6 +6,8 @@ clear variables; close all; clc;
 % ==========================================
 check_id = 27; % 確認したいフォルダ番号
 base_dir = 'F:\hamaguchi\data\20251215\dual_echo'; % データの親フォルダ
+base_dir = 'C:\Users\yasun\Documents\b0_mapping_project\data\20251215\dual_echo'; % 親フォルダ
+
 % ==========================================
 
 % パスの生成
@@ -13,7 +15,7 @@ case_name = num2str(check_id);
 image_file_dual_echo = fullfile(base_dir, case_name);
 image_file_3 = '3_qsm_data';
 save_path = fullfile(image_file_dual_echo, image_file_3);
-mat_file_path = fullfile(save_path, 'Reproduction_Inputs.mat');
+mat_file_path = fullfile(save_path, 'QSM_PDF_Final.mat');
 
 % データの読み込み
 if exist(mat_file_path, 'file')
@@ -56,7 +58,7 @@ for i = 1:9
     axis image; 
     axis off; 
     colormap gray;
-    
+    w
     % --- 修正箇所: 古いバージョン用に caxis を使用 ---
     caxis(display_range); 
     % ------------------------------------------------
