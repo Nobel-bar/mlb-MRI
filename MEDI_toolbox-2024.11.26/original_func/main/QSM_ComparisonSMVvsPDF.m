@@ -5,18 +5,18 @@ clear variables; close all; clc;
 % 設定
 % ==========================================
 base_dir = 'C:\Users\yasun\Documents\b0_mapping_project\data\20251215\dual_echo'; 
-target_id = 24; % 比較したい症例番号
+target_id = 28; % 比較したい症例番号
 
 % ==========================================
 case_name = num2str(target_id);
 qsm_dir = fullfile(base_dir, case_name, '3_qsm_data');
 
-path_smv = fullfile(qsm_dir, 'QSM_Final.mat');     % 以前の手法 (SMV想定)
-path_pdf = fullfile(qsm_dir, 'QSM_PDF_Final.mat'); % 今回の手法 (PDF)
+path_smv = fullfile(qsm_dir, 'QSM_PDF_Final.mat');     % 以前の手法 (SMV想定)
+path_pdf = fullfile(qsm_dir, 'QSM_PDF_Smooth.mat'); % 今回の手法 (PDF)
 
 % --- 1. データ読み込み ---
 if ~exist(path_smv, 'file') || ~exist(path_pdf, 'file')
-    error('比較するファイルが揃っていません。\n SMV: %s\n PDF: %s', path_smv, path_pdf);
+    error('比較するファイルが揃っていません。\n QSM_PDF_Final: %s\n QSM_PDF_Smooth: %s', path_smv, path_pdf);
 end
 
 % SMVデータのロード
@@ -54,17 +54,17 @@ fig = figure('Name', ['Comparison: Case ' case_name], 'Color', 'w', 'Position', 
 ax1 = subplot(2, 3, 1);
 imagesc(rot90(QSM_smv(:,:,sl), 1));
 axis image off; colormap gray; clim(caxis_qsm);
-title('Method A: SMV (Previous)');
+title('Method A: QSM_PDF_Final (Previous)');
 
 ax2 = subplot(2, 3, 2);
 imagesc(rot90(QSM_pdf(:,:,sl), 1));
 axis image off; colormap gray; clim(caxis_qsm);
-title('Method B: PDF (New)');
+title('Method B: QSM_PDF_Smooth (New)');
 
 ax3 = subplot(2, 3, 3);
 imagesc(rot90(Diff_QSM(:,:,sl), 1));
 axis image off; colormap(ax3, jet); clim(caxis_diff); % 差分はカラー(jet)で表示
-title('Difference (PDF - SMV)');
+title('Difference (QSM_PDF_Final - QSM_PDF_Smooth)');
 colorbar;
 
 % --- Row 2: MinIP (静脈描出能の比較) ---
@@ -76,12 +76,12 @@ MinIP_pdf = min(QSM_pdf(:,:,slab), [], 3);
 ax4 = subplot(2, 3, 4);
 imagesc(rot90(MinIP_smv, 1));
 axis image off; colormap gray; clim([-0.2, 0.1]);
-title('MinIP: SMV');
+title('MinIP: QSM_PDF_Final');
 
 ax5 = subplot(2, 3, 5);
 imagesc(rot90(MinIP_pdf, 1));
 axis image off; colormap gray; clim([-0.2, 0.1]);
-title('MinIP: PDF');
+title('MinIP: QSM_PDF_Smooth');
 
 % --- ヒストグラム比較 (値の分布) ---
 subplot(2, 3, 6);
