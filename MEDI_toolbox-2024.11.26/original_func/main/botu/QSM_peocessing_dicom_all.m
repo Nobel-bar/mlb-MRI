@@ -4,7 +4,7 @@
 clear variables; close all; clc;
 
 % --- 共通設定 (ループ外で定義) ---
-base_dir = 'F:\hamaguchi\data\20251215\dual_echo'; % データの親フォルダ
+base_dir ='C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo';
 toolbox_func_path = "F:\hamaguchi\MEDI_toolbox-2024.11.26\functions"; % MEDI関数のパス(変数名pathは予約語のため変更)
 
 % 処理するフォルダ番号の範囲
@@ -82,59 +82,61 @@ for idx = target_ids
             iFreq = unwrapPhase(iMag, iFreq_raw*2, matrix_size)/2;     
         end
         
-%         save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
+        save(fullfile(save_path, 'phase.mat'), 'iFreq', 'iFreq_raw');
         
-        %% 4. 背景磁場除去
-        RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
-%         save(fullfile(save_path, 'PDF.mat'), 'RDF');
+%         %% 4. 背景磁場除去
+%         RDF = PDF(iFreq, N_std, Mask, matrix_size, voxel_size, B0_dir);
+% %         save(fullfile(save_path, 'PDF.mat'), 'RDF');
+% 
+% 
+% 
+%         %% 5. QSM再構成 (MEDI_L1)
+%         % これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
+%         % 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
+%         % MEDI+0（CSFを基準とする手法）を使用する例です。
+%         % 
+%         % --- Mask_CSF を使わない設定に変更して実行 ---
+%         % 'lambda_CSF' オプションを削除しました
+%         % 
+%         % CSFマスクの生成（R2*マップを利用）
+%         R2s = arlo(TE, abs(iField));
+%         Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
+% 
+%         % save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
+%         %% --- Step 1: MEDI_L1による高精度QSM計算 (Chiマップの取得) ---
+%         % lambda: 正則化パラメータ（1000が標準）
+%         % 'merit': 振幅画像のエッジ情報を考慮するオプション（これが高精度の肝です）
+%         QSM = MEDI_L1('lambda', 1000, 'iFreq', RDF, 'N_std', N_std, ...
+%                       'Magnitude', iMag, 'Mask', Mask, ...
+%                       'matrix_size', matrix_size, 'voxel_size', voxel_size, ...
+%                       'B0_dir', B0_dir, 'merit');
+%         %% --- QSMサイズ復元処理 ---
+%         if size(QSM, 3) ~= size(Mask, 3)
+%             fprintf('⚠️ MEDIによりスライス数が削減されました (%d -> %d)。サイズを復元します。\n', size(Mask, 3), size(QSM, 3));
+% 
+%             % 元のサイズ(112)の空の配列を作成
+%             QSM_full = zeros(size(Mask));
+% 
+%             % マスクの範囲から、どのスライスが計算に使われたか特定
+%             % 通常、マスクが存在するスライスの範囲が抽出されています
+%             mask_indices = find(squeeze(sum(sum(Mask, 1), 2)) > 0);
+%             if ~isempty(mask_indices)
+%                 start_sl = min(mask_indices);
+%                 end_sl = start_sl + size(QSM, 3) - 1;
+% 
+%                 % 念のため範囲チェック
+%                 if end_sl <= size(Mask, 3)
+%                     QSM_full(:,:,start_sl:end_sl) = QSM;
+%                 else
+%                     % 中央合わせのフォールバック
+%                     start_sl = floor((size(Mask,3) - size(QSM,3))/2) + 1;
+%                     QSM_full(:,:,start_sl:start_sl+size(QSM,3)-1) = QSM;
+%                 end
+%             end
+%             QSM = QSM_full; % 112スライスに戻したQSMで上書き
+%         end
 
 
-
-        %% 5. QSM再構成 (MEDI_L1)
-        % これがMEDIアルゴリズムの中核です。局所磁場マップ(RDF)から
-        % 形態情報（振幅画像）を利用して磁化率マップ(QSM)を計算します。
-        % MEDI+0（CSFを基準とする手法）を使用する例です。
-        % 
-        % --- Mask_CSF を使わない設定に変更して実行 ---
-        % 'lambda_CSF' オプションを削除しました
-        % 
-        % CSFマスクの生成（R2*マップを利用）
-        R2s = arlo(TE, abs(iField));
-        Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
-
-        % save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
-        %% --- Step 1: MEDI_L1による高精度QSM計算 (Chiマップの取得) ---
-        % lambda: 正則化パラメータ（1000が標準）
-        % 'merit': 振幅画像のエッジ情報を考慮するオプション（これが高精度の肝です）
-        QSM = MEDI_L1('lambda', 1000, 'iFreq', RDF, 'N_std', N_std, ...
-                      'Magnitude', iMag, 'Mask', Mask, ...
-                      'matrix_size', matrix_size, 'voxel_size', voxel_size, ...
-                      'B0_dir', B0_dir, 'merit');
-        %% --- QSMサイズ復元処理 ---
-        if size(QSM, 3) ~= size(Mask, 3)
-            fprintf('⚠️ MEDIによりスライス数が削減されました (%d -> %d)。サイズを復元します。\n', size(Mask, 3), size(QSM, 3));
-
-            % 元のサイズ(112)の空の配列を作成
-            QSM_full = zeros(size(Mask));
-
-            % マスクの範囲から、どのスライスが計算に使われたか特定
-            % 通常、マスクが存在するスライスの範囲が抽出されています
-            mask_indices = find(squeeze(sum(sum(Mask, 1), 2)) > 0);
-            if ~isempty(mask_indices)
-                start_sl = min(mask_indices);
-                end_sl = start_sl + size(QSM, 3) - 1;
-
-                % 念のため範囲チェック
-                if end_sl <= size(Mask, 3)
-                    QSM_full(:,:,start_sl:end_sl) = QSM;
-                else
-                    % 中央合わせのフォールバック
-                    start_sl = floor((size(Mask,3) - size(QSM,3))/2) + 1;
-                    QSM_full(:,:,start_sl:start_sl+size(QSM,3)-1) = QSM;
-                end
-            end
-            QSM = QSM_full; % 112スライスに戻したQSMで上書き
-        end
         % MEDI_L1関数を呼び出し
         % QSM = MEDI_L1('lambda', 1000, 'lambda_CSF', 100, 'merit');
         % 
@@ -157,7 +159,7 @@ for idx = target_ids
         % save SourceSep.mat X
 
         % 保存（後で比較に使用するため）
-        save(fullfile(save_path, 'Reproduction_Inputs.mat'), 'RDF', 'QSM', 'D', 'Mask', 'voxel_size');
+        % save(fullfile(save_path, 'Reproduction_Inputs.mat'), 'RDF', 'QSM', 'D', 'Mask', 'voxel_size');
 
         
 %         %% 5. QSM再構成 (MEDI_L1)

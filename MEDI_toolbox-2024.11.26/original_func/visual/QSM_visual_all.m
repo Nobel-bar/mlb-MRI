@@ -1,5 +1,5 @@
 %================================================================
-% QSM (磁化率マップ) 全スライス 2D/3D ペア表示プログラム
+% iFreq_ppm (磁化率マップ) 全スライス 2D/3D ペア表示プログラム
 % 
 % 概要:
 %   全スライスを、1Figureあたり2スライスずつ表示します。
@@ -10,8 +10,8 @@
 %   - caxis を使用します (古いMATLABバージョン対応)。
 %
 % 依存ファイル:
-%   - 'QSM.mat' ('QSM' 変数を含む)
-%   - 'Mask.mat' ('Mask' 変数を含む)
+%   - 'iFreq_ppm.mat' ('iFreq_ppm' 変数を含む)
+%   - 'iMag.mat' ('iMag' 変数を含む)
 %================================================================
 clear variables;
 close all;
@@ -21,31 +21,33 @@ image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0d
 image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
 image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_1 = '1_data';
-image_file_2 = '2_original_data';
-image_file_3 = '3_output_data'; 
+
+base_dir ='C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27';
+image_file_1 = '1_original_data';
+image_file_2 = '2_data';
+image_file_3 = '3_qsm_data'; 
 image_file_4 = '4_rolate_output_data'; 
 image_file_5 = '5_fitting_output_data'; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-image_file_0 = image_file_00;
+image_file_0 = base_dir;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 load_path = fullfile(image_file_0, image_file_3);
 fprintf('データを読み込んでいます...\n');
 try
-    load(fullfile(load_path, 'QSM.mat'), 'QSM'); 
-    load(fullfile(load_path, 'Mask.mat'), 'Mask'); 
+    load(fullfile(load_path, 'RDF.mat'), 'iFreq_ppm'); 
+    load(fullfile(load_path, 'Mask.mat'), 'iMag'); 
 catch ME
     fprintf('ファイルの読み込みに失敗しました。\n');
-    fprintf('QSM.mat と Mask.mat が %s に存在するか確認してください。\n', load_path);
+    fprintf('iFreq_ppm.mat と iMag.mat が %s に存在するか確認してください。\n', load_path);
     rethrow(ME);
 end
 
-if ~exist('Mask', 'var')
-    warning('変数 "Mask" が見つかりません。マスクなしで続行します。');
-    Mask = ones(size(QSM)); 
+if ~exist('iMag', 'var')
+    warning('変数 "iMag" が見つかりません。マスクなしで続行します。');
+    iMag = ones(size(iFreq_ppm)); 
 end
 
 fprintf('データの読み込みが完了しました。\n');
@@ -54,14 +56,14 @@ fprintf('データの読み込みが完了しました。\n');
 %% --- 2. 表示設定 ---
 
 % 1. 基本設定
-total_slices = size(QSM, 3);
+total_slices = size(iFreq_ppm, 3);
 slices_per_figure = 2; % ★変更: 1Figureあたり2スライス
 rows_per_slice = 1;  % 1スライスあたり1行
 cols_per_slice_pair = 2; % 2D/3D の2列
 rows = slices_per_figure * rows_per_slice; % Figureの総行数 ( = 2)
 cols = cols_per_slice_pair;                % Figureの総列数 ( = 2)
 
-% 2. QSM表示用のカラースケール
+% 2. iFreq_ppm表示用のカラースケール
 qsm_clim = [-0.5, 0.5]; % [ppm]単位。データに合わせて調整してください。
 
 % 3. 画面サイズとプロット位置
@@ -83,7 +85,7 @@ fprintf('全スライスの 2D/3D ペア表示を生成します...\n');
 %% --- 3. 全スライス ループプロット ---
 
 % 1. 全スライスをループ処理
-for slice_idx = 1:total_slices
+for slice_idx = 20:25
     
     % 2. Figureを新規作成するタイミングか判定
     plot_idx_in_figure = mod(slice_idx - 1, slices_per_figure); % 0 か 1
@@ -96,14 +98,14 @@ for slice_idx = 1:total_slices
         
         figure_num = floor((slice_idx - 1) / slices_per_figure) + 1;
         
-        sgtitle(['QSM 2D/3D Comparison - Figure ' num2str(figure_num) ...
+        sgtitle(['iFreq_ppm 2D/3D Comparison - Figure ' num2str(figure_num) ...
                  ' (Slices ' num2str(slice_idx) ' & ' ...
                  num2str(min(slice_idx + 1, total_slices)) ')']);
     end
     
     % 3. 現在のスライスのデータを準備
-    qsm_slice_data = QSM(:, :, slice_idx);
-    current_mask = Mask(:, :, slice_idx);
+    qsm_slice_data = iFreq_ppm(:, :, slice_idx);
+    current_mask = iMag(:, :, slice_idx);
     
     % 4. Figure内の行 (1:上段, 2:下段) を決定
     row_in_figure = plot_idx_in_figure + 1;
@@ -156,10 +158,10 @@ end
 fprintf('表示が完了しました。\n');
 
 %{
-2Dの図における灰色の部分は、計算された磁化率（QSM）の値が 0 [ppm] に近い、正常な脳組織を示しています。
+2Dの図における灰色の部分は、計算された磁化率（iFreq_ppm）の値が 0 [ppm] に近い、正常な脳組織を示しています。
 
 ## 解説
-ご提示いただいた visualize_QSM_all_slices.m などのスクリプトでは、以下の設定を行っています。
+ご提示いただいた visualize_iFreq_ppm_all_slices.m などのスクリプトでは、以下の設定を行っています。
 
 Colormap (配色): colormap(ax, 'gray'); これは、配色を「グレースケール」（白黒の濃淡）に設定しています。
 
@@ -172,7 +174,7 @@ Color Scale (色の範囲): qsm_clim = [-0.5, 0.5]; caxis(ax, qsm_clim); これ�
 0 [ppm] の値は、ちょうど中間の灰色で表示されます。
 
 なぜ灰色が「正常」なのか
-QSM（磁化率）は、水（脳脊髄液, CSF）を基準 (0 [ppm]) として計算されます。 脳の大部分（灰白質や白質）の磁化率は、この基準に非常に近い、ごくわずかな値（例: -0.1 ～ +0.1 [ppm]）しか持ちません。
+iFreq_ppm（磁化率）は、水（脳脊髄液, CSF）を基準 (0 [ppm]) として計算されます。 脳の大部分（灰白質や白質）の磁化率は、この基準に非常に近い、ごくわずかな値（例: -0.1 ～ +0.1 [ppm]）しか持ちません。
 
 したがって、大部分の正常な脳組織は、0 [ppm] に近い「灰色」で表示されます。
 

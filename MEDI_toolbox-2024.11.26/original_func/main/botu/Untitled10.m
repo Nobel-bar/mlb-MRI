@@ -8,6 +8,8 @@ fprintf('1. パラメータを設定しています...\n');
 
 % データフォルダのパス (Fドライブの方を有効にしています)
 base_dir = 'C:\Users\yasun\Documents\b0_mapping_project\data\20251215\dual_echo'; % !! 要変更 !!
+
+base_dir ='C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo';
 target_id = '27'; % 解析対象のフォルダ名
 
 image_file_dual_echo = fullfile(base_dir, target_id);
