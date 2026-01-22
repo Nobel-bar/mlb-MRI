@@ -2,16 +2,24 @@
 clear; clc; close all;
 
 %% 1. 設定：ファイルパス
+
+
 % -------------------------------------------------------------------------
 % Shim ON データ (基準)
-dicomFolder_ON    = 'F:\hamaguchi\20251215\dual_echo\27\1_original_data';
-path_mat_ON_Mag   = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\Mask.mat';
-path_mat_ON_Phase = 'F:\hamaguchi\20251215\dual_echo\27\3_qsm_data\phase.mat';
+dicomFolder_ON    = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27\1_original_data';
+path_mat_ON_Mag   = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27\3_qsm_data\Mask.mat';
+path_mat_ON_Phase = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27\3_qsm_data\phase.mat';
 
 % Shim OFF データ
+<<<<<<< Updated upstream
 dicomFolder_OFF    = 'F:\hamaguchi\20251215\dual_echo\27Z\1_original_data';
 path_mat_OFF_Mag   = "no_shim_phantom_mag":
 path_mat_OFF_Phase = "no_shim_phantom_mag":
+
+% dicomFolder_OFF    = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27Z\1_original_data';
+% path_mat_OFF_Mag   = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27Z\3_qsm_data\Mask.mat';
+% path_mat_OFF_Phase = 'C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27Z\3_qsm_data\phase.mat';
+
 % -------------------------------------------------------------------------
 
 %% 2. データ読み込み & 前処理
@@ -92,7 +100,7 @@ for p = 1:size(patterns, 1)
 end
 
 %% 5. 5つの画像の生成
-poly = polyfit(best_shape, vals_measured, 1);
+poly = polyfit(best_shape(:), vals_measured(:), 1);
 alpha = poly(1); beta = poly(2);
 
 % --- 1. Measured Delta (実測差分) ---
@@ -212,27 +220,21 @@ rotate3d on;
 
 %% 関数群
 function [shimStruct, dicomInfo] = get_dicom_info(targetPath)
-    shimStruct = struct(); dicomInfo = [];
-    if ~isfolder(targetPath), error(['No folder: ' targetPath]); end
+    shimStruct = struct('X',0,'Y',0,'Z',0,'XY',0,'XZ',0,'YZ',0,'X2Y2',0,'Z2',0);
     files = dir(fullfile(targetPath, '*'));
     for i = 1:length(files)
         fname = files(i).name;
         if startsWith(fname,'.') || files(i).isdir, continue; end
-        try
-            info = dicominfo(fullfile(files(i).folder, fname));
-            if isfield(info, 'Private_0029_1022')
-                raw = info.Private_0029_1022;
-                if isa(raw,'uint8')||isa(raw,'int8'), raw=char(raw'); else, raw=string(raw); end
-                pts = strsplit(raw, ',');
-                for k=1:length(pts)
-                    it=strtrim(pts{k});
-                    if contains(it,'='), kv=strsplit(it,'='); 
-                        v=str2double(kv{2}); if ~isnan(v), shimStruct.(strtrim(kv{1}))=v; end
-                    end
-                end
-                dicomInfo = info; break;
-            end
-        catch, continue; end
+        info = dicominfo(fullfile(files(i).folder, fname));
+        
+        % 全フィールド名を表示して、Shimに関わりそうな名前を探すためのデバッグ
+        % fnames = fieldnames(info);
+        % disp(fnames(contains(fnames, 'Shim') | contains(fnames, 'Private_0019')));
+        
+        % ここにメーカーごとの取得ロジックを追加する必要があります
+        % 例：Siemensの特定のタグを読み込む処理など
+        
+        dicomInfo = info; break;
     end
 end
 

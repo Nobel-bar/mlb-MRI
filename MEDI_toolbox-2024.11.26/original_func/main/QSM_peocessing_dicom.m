@@ -10,6 +10,10 @@ clear variables;
 fprintf('1. パラメータを設定しています...\n');
 % パス設定
 image_file_dual_echo = 'F:\hamaguchi\data\20251215\dual_echo\27'; % !! 要変更 !!
+% image_file_dual_echo = ['F:\hamaguchi\20251215\dual_echo\27Z']; % !! 要変更 !!
+% 
+% 
+% image_file_dual_echo = ['C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo\27Z']; 
 image_file_1 = '1_original_data';
 image_file_2 = '2_data';
 image_file_3 = '3_qsm_data'; 
@@ -122,6 +126,7 @@ Mask_CSF = extract_CSF(R2s, Mask, voxel_size);
 % save(fullfile(save_path, 'other.mat'), 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
 
 path ="F:\hamaguchi\MEDI_toolbox-2024.11.26\functions";
+
 % save(fullfile(save_path, 'RDF.mat'),'iFreq', 'iFreq_raw', 'iMag', 'N_std', 'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir', 'Mask_CSF');
     
 %% --- Step 1: MEDI_L1による高精度QSM計算 (Chiマップの取得) ---
@@ -170,6 +175,7 @@ fprintf('スクリプトのこの部分までの処理が完了しました。\n
 % Initialization for Source Separation
 [chi_p_init,chi_n_init,R2p,alpha,beta] = MEDI_L1ss_init(Mask,CF,R2s,QSM,delta_TE);
 % save RDFss.mat iFreq RDF N_std iMag Mask matrix_size voxel_size delta_TE CF B0_dir alpha beta R2p Mask_CSF chi_p_init chi_n_init
+
 %% --- Step 3: フォワードシミュレーション用のカーネル取得 ---
 % Pythonで自作していたカーネルの代わりに、Toolbox標準のものを使用
 D = dipole_kernel(matrix_size, voxel_size, B0_dir);
@@ -179,3 +185,4 @@ D = dipole_kernel(matrix_size, voxel_size, B0_dir);
 
 % 保存（後で比較に使用するため）
 save(fullfile(save_path, 'Reproduction_Inputs.mat'), 'RDF', 'QSM', 'D', 'Mask', 'voxel_size');
+
