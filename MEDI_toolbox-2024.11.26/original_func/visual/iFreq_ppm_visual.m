@@ -1,4 +1,4 @@
-%% iFreq_ppm 4スライス表示スクリプト
+%% WrappedPhase 4スライス表示スクリプト
 clear variables; close all; clc;
 
 % =========================================================================
@@ -21,18 +21,18 @@ end
 fprintf('データを読み込んでいます: %s ...\n', mat_file_path);
 % 変数の中身を確認してから読み込む
 vars = whos('-file', mat_file_path);
-if ismember('iFreq_ppm', {vars.name})
-    load(mat_file_path, 'iFreq_ppm');
-    target_data = iFreq_ppm;
-    var_name = 'iFreq_ppm';
+if ismember('WrappedPhase', {vars.name})
+    load(mat_file_path, 'WrappedPhase');
+    target_data = WrappedPhase;
+    var_name = 'WrappedPhase';
 elseif ismember('RDF', {vars.name})
-    % iFreq_ppmがない場合、RDF変数を代用
-    fprintf('iFreq_ppmが見つかりません。"RDF" を読み込みます。\n');
+    % WrappedPhaseがない場合、RDF変数を代用
+    fprintf('WrappedPhaseが見つかりません。"RDF" を読み込みます。\n');
     load(mat_file_path, 'RDF');
     target_data = RDF;
     var_name = 'RDF';
 else
-    error('指定されたファイルに iFreq_ppm または RDF 変数が含まれていません。');
+    error('指定されたファイルに WrappedPhase または RDF 変数が含まれていません。');
 end
 
 % =========================================================================
