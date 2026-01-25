@@ -16,33 +16,24 @@ clear variables;
 close all;
 
 %% --- 1. データ読み込み ---
-image_file_00 = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_0deg_H'; % !! 要変更 !!
-image_file_2DGE_1_2_Rotate_H = 'F:\hamaguchi\copy\20241205_RawData_H\Volunteer_Rotate_H\2DGE_1-2_Rotate_H'; % !! 要変更 !!
-image_file_2DGE_1_2_Rotate_H_local = 'C:\Users\hamaguchi\Downloads\matlab\2DGE_1-2_Rotate_H'; % !! 要変更 !!
-image_file_0 = '/Users/nori/Downloads/matlab/'; % !! 要変更 !!
-image_file_1 = '1_data';
-image_file_2 = '2_original_data';
-image_file_3 = '3_output_data'; 
-image_file_4 = '4_rolate_output_data'; 
-image_file_5 = '5_fitting_output_data'; 
+base_dir ='C:\Users\hamaguchi\project\b0_mapping_project\data\20251215\dual_echo';
+target_id = '27';
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-image_file_0 = image_file_2DGE_1_2_Rotate_H;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%変更あり%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ファイルパスの構築
+load_path = fullfile(base_dir, target_id, '3_qsm_data');
 
-load_path = fullfile(image_file_0, image_file_3);
 
 fprintf('データを読み込んでいます...\n');
 try
-    load(fullfile(load_path, 'QSM.mat'), 'QSM'); 
+    load(fullfile(load_path, 'QSM_Final.mat'), 'QSM_final'); 
     load(fullfile(load_path, 'Mask.mat'), 'Mask'); 
 catch ME
     fprintf('ファイルの読み込みに失敗しました。\n');
     fprintf('QSM.mat と Mask.mat が %s に存在するか確認してください。\n', load_path);
     rethrow(ME);
 end
+
+QSM = QSM_final;
 
 if ~exist('Mask', 'var')
     warning('変数 "Mask" が見つかりません。マスクなしで続行します。');
@@ -80,7 +71,9 @@ sgtitle(sprintf('QSM 2D (left) vs 3D (right) - Slice %d', slice_to_display), 'Fo
 
 % 2. 現在のスライスのデータを準備
 qsm_slice_data = QSM(:, :, slice_to_display);
+qsm_slice_data = permute(qsm_slice_data, [2 1 3]);
 current_mask = Mask(:, :, slice_to_display);
+current_mask = permute(current_mask, [2 1 3]);
 
 % --- 3. 左側: 2D (imshow) 表示 ---
 ax1 = subplot(1, 2, 1);

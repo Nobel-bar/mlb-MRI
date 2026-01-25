@@ -17,7 +17,7 @@ else
     % パスが見つからない場合はエラーで止める
     error('Toolboxのフォルダが見つかりません。パスを確認してください:\n%s', toolbox_root_path);
 end
-target_ids = 24:33; 
+target_ids = 28:38; 
 
 fprintf('【超】強力スムージング処理を開始します (N_std=0.1, Lambda=5000)...\n');
 
@@ -88,7 +88,7 @@ for idx = target_ids
         % これによりデータの信頼度を下げ、平滑化を受け入れさせます
         N_std = (ones(size(iFreq)) * 0.1) * scale_factor; 
         
-        save(fullfile(save_path, 'RDF.mat'), 'WrappedPhase', 'iFreq', 'RDF', 'N_std', 'iMag', 'Mask', ...
+        save(fullfile(save_path, 'RDF.mat'), 'WrappedPhase','iFreq_ppm', 'iFreq', 'RDF', 'N_std', 'iMag', 'Mask', ...
              'matrix_size', 'voxel_size', 'delta_TE', 'CF', 'B0_dir');
     % 
     %     current_dir = pwd;
